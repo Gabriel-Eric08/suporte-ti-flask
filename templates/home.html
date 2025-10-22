@@ -6,87 +6,28 @@
     <title>SECRETARIA DA MULHER - Sistema de Chamados</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
     <style>
-        /* Paleta de Cores Baseada no Seu Código */
+        /* ... Estilos CSS anteriores ... */
         :root {
-            --bs-pink-primary: #d81b60; /* Rosa Escuro - Cor principal para links e destaques */
-            --bs-pink-hover: #ff69b4; /* Rosa Vibrante - Cor no hover */
-            --bs-bg-light: #f9f9f9; /* Fundo da Página */
-            --bs-bg-white: #ffffff; /* Fundo do menu/sidebar */
-            --bs-text-muted: #6c757d; /* Cor para texto secundário */
+            --bs-pink-primary: #d81b60;
+            --bs-pink-hover: #ff69b4;
+            --bs-bg-light: #f9f9f9;
+            --bs-bg-white: #ffffff;
+            --bs-text-muted: #6c757d;
         }
 
-        body {
-            background-color: var(--bs-bg-light); 
-        }
-
-        /* Estilos da Barra Lateral (Sidebar) - Inspirado na sua Navbar */
-        .sidebar {
-            height: 100vh;
-            background-color: var(--bs-bg-white); /* Fundo branco */
-            padding-top: 20px;
-            box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1); /* Sombra lateral */
-            border-right: 3px solid var(--bs-pink-primary); /* Borda de destaque */
-        }
-
-        .sidebar .sidebar-header {
-            color: var(--bs-pink-primary);
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
-        .sidebar .nav-link {
-            color: var(--bs-pink-primary); /* Rosa escuro para o texto */
-            padding: 15px 20px;
-            font-weight: 500;
-            border-left: 5px solid transparent;
-            transition: all 0.3s;
-        }
-
-        .sidebar .nav-link:hover {
-            background-color: #fff0f5; /* Um rosa bem sutil (igual ao seu dropdown hover) */
-            color: var(--bs-pink-hover); /* Rosa vibrante no hover */
-            border-left: 5px solid var(--bs-pink-hover);
-        }
-
-        /* Aba Ativa */
-        .sidebar .nav-link.active {
-            background-color: #fff0f5; 
-            color: var(--bs-pink-primary); 
-            border-left: 5px solid var(--bs-pink-primary); /* Indicador visual forte */
-            font-weight: bold;
-        }
-
-        /* Estilo do Conteúdo Principal */
-        .main-content {
-            padding: 30px;
-            min-height: 100vh;
-        }
-        
-        /* Título Principal no Conteúdo */
-        .hero-title {
-            color: var(--bs-pink-primary);
-            font-size: 3rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-
-        .hero-subtitle {
-            color: var(--bs-text-muted);
-            font-style: italic;
-        }
-
-        /* Estilo do botão primário para seguir a paleta */
-        .btn-primary {
-            background-color: var(--bs-pink-primary) !important;
-            border-color: var(--bs-pink-primary) !important;
-        }
-
-        .btn-primary:hover {
-            background-color: var(--bs-pink-hover) !important;
-            border-color: var(--bs-pink-hover) !important;
-        }
+        body { background-color: var(--bs-bg-light); }
+        .sidebar { height: 100vh; background-color: var(--bs-bg-white); padding-top: 20px; box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1); border-right: 3px solid var(--bs-pink-primary); }
+        .sidebar .sidebar-header { color: var(--bs-pink-primary); font-weight: bold; text-transform: uppercase; }
+        .sidebar .nav-link { color: var(--bs-pink-primary); padding: 15px 20px; font-weight: 500; border-left: 5px solid transparent; transition: all 0.3s; }
+        .sidebar .nav-link:hover { background-color: #fff0f5; color: var(--bs-pink-hover); border-left: 5px solid var(--bs-pink-hover); }
+        .sidebar .nav-link.active { background-color: #fff0f5; color: var(--bs-pink-primary); border-left: 5px solid var(--bs-pink-primary); font-weight: bold; }
+        .main-content { padding: 30px; min-height: 100vh; }
+        .hero-title { color: var(--bs-pink-primary); font-size: 3rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .hero-subtitle { color: var(--bs-text-muted); font-style: italic; }
+        .btn-primary { background-color: var(--bs-pink-primary) !important; border-color: var(--bs-pink-primary) !important; }
+        .btn-primary:hover { background-color: var(--bs-pink-hover) !important; border-color: var(--bs-pink-hover) !important; }
     </style>
 </head>
 <body>
@@ -165,7 +106,9 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label for="setorSolicitante" class="form-label">Setor / Unidade do Solicitante</label>
-                                            <input type="text" class="form-control" id="setorSolicitante" required>
+                                            <select class="form-select" id="setorSolicitante" required>
+                                                <option value="" selected disabled>Selecione seu Setor</option>
+                                                </select>
                                         </div>
                                     </div>
 
@@ -215,33 +158,78 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const tipoProblemaSelect = document.getElementById('tipoProblema');
+            const setorSolicitanteSelect = document.getElementById('setorSolicitante'); // NOVO SELECT
             const camposVariaveisDiv = document.getElementById('camposVariaveis');
             const campoDescricaoGeralDiv = document.getElementById('campoDescricaoGeral');
+            const formChamado = document.getElementById('formChamado');
 
-            tipoProblemaSelect.addEventListener('change', function() {
-                const tipo = this.value;
-                camposVariaveisDiv.innerHTML = ''; // Limpa a área de campos variáveis
-                campoDescricaoGeralDiv.classList.add('d-none'); // Esconde a descrição geral por padrão
+            // ====================================================================
+            // 1. Dicionários de Mapeamento (Lookup Tables) - COM VALORES ATUALIZADOS
+            //    Estes valores DEVEM CORRESPONDER aos IDs reais no seu MySQL.
+            // ====================================================================
+            const setorMap = {
+                'Enfrentamento': 1,
+                'Comunicação': 2,
+                'Orçamentário': 3 
+            };
+
+            const plataformaMap = {
+                'Computador': 1,
+                'Expresso': 2,
+                'SEI': 3
+            };
+
+            const cargoMap = {
+                'Usuário': 1,
+                'Funcionário': 2,
+                'Gerente': 3 
+            };
+            
+            const unidadeSeiMap = {
+                'Secretaria da Mulher': 1,
+                'Unidade Administrativa 02': 2
+            };
+
+            // --- FUNÇÃO DE POPULAR O SELECT DO SETOR ---
+            function popularSetorSelect() {
+                let setorOptions = '';
+                for (const nome in setorMap) {
+                    // O valor do option é o NOME, que será mapeado para ID no submit
+                    setorOptions += `<option value="${nome}">${nome}</option>`;
+                }
+                setorSolicitanteSelect.insertAdjacentHTML('beforeend', setorOptions);
+            }
+
+            // --- FUNÇÃO DE RENDERIZAR CAMPOS DINÂMICOS ---
+            function renderCamposVariaveis(tipo) {
+                camposVariaveisDiv.innerHTML = '';
+                campoDescricaoGeralDiv.classList.add('d-none');
+                
+                // Renderizar a Descrição Geral se não for tipo 5 ou 6
+                if (tipo && tipo !== '5' && tipo !== '6') {
+                    campoDescricaoGeralDiv.classList.remove('d-none');
+                }
 
                 // ====================================================================
                 // CASO 5: Esqueceu Senha
                 // ====================================================================
                 if (tipo === '5') {
+                    campoDescricaoGeralDiv.classList.remove('d-none');
+
+                    // Cria opções de plataforma dinamicamente do Map
+                    let plataformaOptions = '<option value="" selected disabled>Selecione a plataforma</option>';
+                    for (const nome in plataformaMap) {
+                        plataformaOptions += `<option value="${nome}">${nome}</option>`;
+                    }
+
                     camposVariaveisDiv.innerHTML = `
                         <div class="alert alert-warning border-start border-3 border-warning" role="alert">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i> **Atenção:** Informe o **Nome Completo** e qual a **Plataforma** para o reset de senha.
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i> **Atenção:** Informe qual a **Plataforma** para o reset de senha.
                         </div>
                         <div class="mb-3">
-                            <label for="nomeCompletoSenha" class="form-label">Nome Completo (Usuário da Senha)</label>
-                            <input type="text" class="form-control" id="nomeCompletoSenha" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="plataformaSenha" class="form-label">Plataforma</label>
-                            <select class="form-select" id="plataformaSenha" required>
-                                <option value="" selected disabled>Selecione a plataforma</option>
-                                <option value="Computador">Computador</option>
-                                <option value="Expresso">Expresso</option>
-                                <option value="SEI">SEI</option>
+                            <label for="plataformaInput" class="form-label">Plataforma</label>
+                            <select class="form-select" id="plataformaInput" name="plataformaInput" required>
+                                ${plataformaOptions}
                             </select>
                         </div>
                     `;
@@ -251,57 +239,180 @@
                 // CASO 6: Criação de Novo Login
                 // ====================================================================
                 else if (tipo === '6') {
+                    campoDescricaoGeralDiv.classList.remove('d-none');
+                    
+                    // Cria opções de cargo e unidade dinamicamente
+                    let cargoOptions = '<option value="" selected disabled>Selecione o cargo</option>';
+                    for (const nome in cargoMap) {
+                        cargoOptions += `<option value="${nome}">${nome}</option>`;
+                    }
+                    let unidadeOptions = '<option value="" selected disabled>Selecione a unidade</option>';
+                    for (const nome in unidadeSeiMap) {
+                        unidadeOptions += `<option value="${nome}">${nome}</option>`;
+                    }
+
                     camposVariaveisDiv.innerHTML = `
                         <div class="alert alert-info border-start border-3 border-info" role="alert">
                             <i class="bi bi-info-circle-fill me-2"></i> **Preencha com os dados do NOVO USUÁRIO**
                         </div>
                         <div class="mb-3">
-                            <label for="nomeCompletoNovoLogin" class="form-label">Nome Completo do Novo Usuário</label>
-                            <input type="text" class="form-control" id="nomeCompletoNovoLogin" required>
+                            <label for="cpfInput" class="form-label">CPF</label>
+                            <input type="text" class="form-control" id="cpfInput" name="cpfInput" required>
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label for="cpfNovoLogin" class="form-label">CPF</label>
-                                <input type="text" class="form-control" id="cpfNovoLogin" required>
+                                <label for="cargoInput" class="form-label">Cargo</label>
+                                <select class="form-select" id="cargoInput" name="cargoInput" required>
+                                    ${cargoOptions}
+                                </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="cargoNovoLogin" class="form-label">Cargo</label>
-                                <select class="form-select" id="cargoNovoLogin" required>
-                                    <option value="" selected disabled>Selecione o cargo</option>
-                                    <option value="Cargo 1">Cargo 1</option>
-                                    <option value="Cargo 2">Cargo 2</option>
-                                    <option value="Cargo 3">Cargo 3</option>
+                                <label for="unidadeSeiInput" class="form-label">Unidade/Setor que o usuário terá acesso no SEI</label>
+                                <select class="form-select" id="unidadeSeiInput" name="unidadeSeiInput" required>
+                                    ${unidadeOptions}
                                 </select>
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label for="unidadeAcessoSei" class="form-label">Unidade/Setor que o usuário terá acesso no SEI</label>
-                            <select class="form-select" id="unidadeAcessoSei" required>
-                                <option value="" selected disabled>Selecione a unidade</option>
-                                <option value="Unidade 1">Unidade 1</option>
-                                <option value="Unidade 2">Unidade 2</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
                             <label for="acessosAdicionais" class="form-label">Acessos Adicionais (Catracas, Expresso, Computador, etc.)</label>
-                            <textarea class="form-control" id="acessosAdicionais" rows="2" placeholder="Ex: Precisa de acesso na catraca X e Y."></textarea>
+                            <textarea class="form-control" id="acessosAdicionais" name="acessosAdicionais" rows="2" placeholder="Ex: Precisa de acesso na catraca X e Y."></textarea>
                         </div>
                     `;
                 } 
                 
                 // ====================================================================
-                // OUTROS CASOS (1, 2, 3, 4, 7 e 8)
+                // OUTROS CASOS (Se nenhuma opção válida está selecionada)
                 // ====================================================================
-                else if (tipo !== '') {
-                    // Para todos os outros casos, apenas mostra o campo de descrição geral
-                    campoDescricaoGeralDiv.classList.remove('d-none');
-                } else {
-                    // Quando nenhuma opção válida está selecionada
-                    camposVariaveisDiv.innerHTML = `
+                else if (tipo === '') {
+                     camposVariaveisDiv.innerHTML = `
                         <p class="text-center text-muted p-4 bg-light rounded">
                             * Por favor, selecione um tipo de problema acima para continuar.
                         </p>
                     `;
+                }
+            }
+
+            // --- EXECUÇÃO INICIAL ---
+            popularSetorSelect(); // Popula o novo SELECT de Setor
+            renderCamposVariaveis(tipoProblemaSelect.value);
+
+            // --- EVENT LISTENERS ---
+            tipoProblemaSelect.addEventListener('change', function() {
+                renderCamposVariaveis(this.value);
+            });
+
+            // ====================================================================
+            // 2. FUNÇÃO DE SUBMISSÃO (Onde ocorre a conversão de nome para ID)
+            // ====================================================================
+
+            formChamado.addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                const tipo = tipoProblemaSelect.value;
+                const setorNome = setorSolicitanteSelect.value; // Agora lê do SELECT
+
+                // Validação de campos principais
+                if (!tipo || !setorNome || setorNome === '') {
+                    Swal.fire('Erro!', 'Por favor, preencha todos os campos obrigatórios e selecione o tipo de problema/setor.', 'error');
+                    return;
+                }
+
+                const setorId = setorMap[setorNome];
+                if (!setorId) {
+                    Swal.fire('Erro de Setor!', 'O Setor selecionado não foi reconhecido. Verifique e tente novamente.', 'error');
+                    return;
+                }
+
+                // Monta o objeto base do JSON
+                const payload = {
+                    nome_completo: document.getElementById('nomeSolicitante').value,
+                    setor_id: setorId,
+                    tipo_id: parseInt(tipo),
+                    desc: document.getElementById('descricaoGeral').value || null,
+                    cpf: null,
+                    plataforma_id: null,
+                    cargo_id: null,
+                    unidade_sei_id: null
+                };
+                
+                // Pega o login do usuário dos cookies (se existir)
+                const usernameCookie = document.cookie.split('; ').find(row => row.startsWith('username='));
+                if(usernameCookie) {
+                    payload.user = usernameCookie.split('=')[1];
+                } else {
+                    payload.user = payload.nome_completo;
+                }
+
+
+                // --- Campos Condicionais ---
+
+                if (tipo === '5') {
+                    const plataformaNome = document.getElementById('plataformaInput').value;
+                    payload.plataforma_id = plataformaMap[plataformaNome] || null;
+
+                    if (!payload.plataforma_id) {
+                         Swal.fire('Erro!', 'Selecione a plataforma para a recuperação de senha.', 'error');
+                         return;
+                    }
+                } 
+                
+                else if (tipo === '6') {
+                    const cargoNome = document.getElementById('cargoInput').value;
+                    const unidadeNome = document.getElementById('unidadeSeiInput').value;
+                    const acessos = document.getElementById('acessosAdicionais').value;
+
+                    payload.cpf = document.getElementById('cpfInput').value;
+                    payload.cargo_id = cargoMap[cargoNome] || null;
+                    payload.unidade_sei_id = unidadeSeiMap[unidadeNome] || null;
+                    
+                    // Adiciona acessos adicionais à descrição
+                    payload.desc = (payload.desc ? payload.desc + "\n" : "") + "ACESSOS ADICIONAIS: " + acessos;
+
+                    if (!payload.cpf || !payload.cargo_id || !payload.unidade_sei_id) {
+                         Swal.fire('Erro!', 'Preencha todos os dados de novo login (CPF, Cargo e Unidade SEI).', 'error');
+                         return;
+                    }
+                }
+                
+                // Limpeza final do payload (remove chaves com valor null antes de enviar)
+                Object.keys(payload).forEach(key => {
+                    if (payload[key] === null) {
+                        delete payload[key];
+                    }
+                });
+
+
+                // --- Envio da Requisição ---
+                
+                const apiUrl = '/chamados/'; 
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload),
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        Swal.fire({
+                            title: 'Sucesso!',
+                            text: result.message + (result.id ? ` ID: ${result.id}` : ''),
+                            icon: 'success',
+                            confirmButtonColor: 'var(--bs-pink-primary)'
+                        }).then(() => {
+                            formChamado.reset(); 
+                            renderCamposVariaveis(''); // Reseta a visualização
+                        });
+                    } else {
+                        Swal.fire('Erro!', result.message || 'Ocorreu um erro desconhecido ao enviar o chamado.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Erro na requisição:', error);
+                    Swal.fire('Erro de Conexão!', 'Não foi possível conectar ao servidor. Tente novamente.', 'error');
                 }
             });
         });

@@ -1,7 +1,38 @@
 from flask import Flask, Blueprint, render_template
+from flask import jsonify
+from models.models import Setor
+from db_config import db
+from sqlalchemy.exc import SQLAlchemyError
 
 home_route=Blueprint('Home',__name__)
 
 @home_route.route('/')
 def home_page():
+    from models.models import Usuario
+
+    usuario = Usuario.query.filter_by(login='admin').first()
+    print(usuario)
     return render_template('home.html')
+
+@home_route.route('/test-db')
+def test_db():
+    try:
+        # Tenta buscar o primeiro registro da tabela 'setores'
+        setor = Setor.query.first()
+        if setor:
+            return jsonify({
+                "mensagem": "Conexão com o banco bem-sucedida!",
+                "setor_exemplo": setor.nome_setor,
+                "codigo": 200
+            }), 200
+        else:
+            return jsonify({
+                "mensagem": "Conexão OK, mas a tabela 'setores' está vazia.",
+                "codigo": 200
+            }), 200
+    except SQLAlchemyError as e:
+        # Caso dê erro de conexão ou de consulta
+        return jsonify({
+            "mensagem": f"Erro ao conectar ou consultar o banco: {str(e)}",
+            "codigo": 500
+        }), 500

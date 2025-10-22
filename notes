@@ -1,0 +1,34 @@
+Estrutura do projeto e banco de dados
+
+Como funciona?
+
+Um Usuário entra na aplicação com login e senha (Login único de início)
+    -Envia-se um post para a rota de autenticação, define nos cookies username e password e cargo
+
+Template geral:
+Nav bar lateral das abas e título na aba.
+
+Aba de abrir chamado:
+
+Nome de usuário, setor, tipo de problema e forms dinâmico, botão de enviar chamado.
+#Ao clicar envia um post para enviar o chamado que deve conter os campos
+#Id, Datetime, User, Setor, Tipo, Desc, nome_completo, plataforma, cpf, cargo, unidade_sei
+
+Plataforma(1- Computador, 2 - expresso ou 3-SEI)
+Cargos(1-usuario, 2-funcionario, 3-admin)
+Setores(1-Enfrentamento, 2-Comunicação, 3-Orçamentário)
+Tipos_chamado(1° Pc não liga
+
+2° mouse ou teclado com defeito
+
+3° instalação de programa
+
+4° internet sem funcionar 
+
+5° esqueceu senha de acesso ao computador, expresso ou SEI.
+
+6° criação de um novo login para acesso as catracas, expresso, SEI e computador
+
+7° impressora sem funcionar 
+
+8° outro)
