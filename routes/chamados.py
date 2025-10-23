@@ -1,6 +1,6 @@
 from flask import Flask, Blueprint, request, jsonify
 # Importe todos os modelos necessários para validação
-from models.models import Chamado, TipoChamado, Setor, Plataforma, Cargo, UnidadeSei 
+from models.models import Chamado, TipoChamado, Setor, Plataforma, Cargo, UnidadeSEI
 from datetime import datetime
 from db_config import db
 # from utils.getUsername import getUsername # (Não usado na rota, mas mantido)
@@ -72,7 +72,7 @@ def enviar_chamado():
     if cargo_id and not Cargo.query.get(cargo_id):
         return jsonify({"success": False, "message": f"Cargo ID {cargo_id} inválido."}), 400
     
-    if unidade_sei_id and not UnidadeSei.query.get(unidade_sei_id):
+    if unidade_sei_id and not UnidadeSEI.query.get(unidade_sei_id):
         return jsonify({"success": False, "message": f"Unidade SEI ID {unidade_sei_id} inválida."}), 400
     
     # --- 5. Criação e Inserção do Novo Chamado ---

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SECRETARIA DA MULHER - Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        /* Variáveis de Cores */
+        :root {
+            --bs-pink-primary: #d81b60;
+            --bs-pink-hover: #ff69b4;
+            --bs-bg-light: #f9f9f9;
+            --bs-bg-white: #ffffff;
+            --bs-text-muted: #6c757d;
+        }
+
+        body { 
+            background-color: var(--bs-bg-light); 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Container principal para o card de login/visual */
+        .login-card {
+            max-width: 900px;
+            width: 95%;
+            border-radius: 15px;
+            overflow: hidden; /* Garante que o border-radius funcione nas colunas internas */
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Coluna de Fundo/Visual */
+        .visual-column {
+            background: linear-gradient(135deg, var(--bs-pink-primary), #ad164d); /* Gradiente */
+            color: white;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .visual-column h2 {
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        /* Coluna do Formulário */
+        .form-column {
+            background-color: var(--bs-bg-white);
+            padding: 50px;
+        }
+        
+        .login-title {
+            color: var(--bs-pink-primary);
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Estilos de Cores do Tema */
+        .btn-primary { 
+            background-color: var(--bs-pink-primary) !important; 
+            border-color: var(--bs-pink-primary) !important; 
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .btn-primary:hover { 
+            background-color: var(--bs-pink-hover) !important; 
+            border-color: var(--bs-pink-hover) !important; 
+        }
+        .form-control:focus {
+            border-color: var(--bs-pink-primary);
+            box-shadow: 0 0 0 0.25rem rgba(216, 27, 96, 0.25);
+        }
+        .link-forgot-password, .link-create-account {
+            color: var(--bs-text-muted);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        .link-forgot-password:hover, .link-create-account:hover {
+            color: var(--bs-pink-hover);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="row g-0">
+            
+            <div class="col-lg-5 d-none d-lg-flex visual-column">
+                <i class="bi bi-person-workspace" style="font-size: 6rem; margin-bottom: 20px;"></i>
+                <h2>Bem-vinda ao Painel!</h2>
+                <p class="lead">Acesse com suas credenciais para gerenciar os chamados de suporte técnico da Secretaria da Mulher.</p>
+                <p class="mt-4 fst-italic">Sistema de Apoio e Gerenciamento - TI</p>
+            </div>
+            
+            <div class="col-lg-7 form-column">
+                <div class="text-center mb-5">
+                    <h1 class="login-title">Secretaria da Mulher</h1>
+                    <p class="text-muted">Acesso de Usuários e Administradores</p>
+                </div>
+
+                <form>
+                    
+                    <div class="mb-3">
+                        <label for="inputUsername" class="form-label visually-hidden">Nome de Usuário</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                            <input type="text" class="form-control" id="inputUsername" placeholder="Nome de Usuário" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="inputPassword" class="form-label visually-hidden">Senha</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                            <input type="password" class="form-control" id="inputPassword" placeholder="Senha" required>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mb-3">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-box-arrow-in-right me-2"></i> Entrar no Sistema
+                        </button>
+                    </div>
+
+                    <div class="text-center mt-4 row">
+                        <div class="col-md-6 mb-2 mb-md-0">
+                            <a href="#" class="link-forgot-password">Esqueceu sua senha?</a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="#" class="link-create-account">Criar uma Nova Conta</a>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>

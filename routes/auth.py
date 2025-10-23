@@ -3,6 +3,10 @@ from models.models import Usuario
 
 auth_route=Blueprint('Auth',__name__)
 
+
+
+
+
 @auth_route.route('/', methods=['POST'])
 def validate_login():
     data = request.get_json()
