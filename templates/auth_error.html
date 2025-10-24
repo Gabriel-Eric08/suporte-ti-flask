@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SECRETARIA DA MULHER - Erro de Autenticação</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
+    <style>
+        /* Manter as variáveis de cor */
+        :root {
+            --bs-pink-primary: #d81b60;
+            --bs-pink-hover: #ff69b4;
+            --bs-bg-light: #f9f9f9;
+            --bs-bg-white: #ffffff;
+            --bs-text-muted: #6c757d;
+        }
+
+        body { 
+            background-color: var(--bs-bg-light); 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .error-container {
+            max-width: 500px;
+            width: 100%;
+            background-color: var(--bs-bg-white);
+            border: 2px solid var(--bs-pink-primary);
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(216, 27, 96, 0.2);
+        }
+        .error-title {
+            color: var(--bs-pink-primary);
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        .error-icon {
+            font-size: 5rem;
+            color: var(--bs-pink-primary);
+        }
+        .btn-primary { 
+            background-color: var(--bs-pink-primary) !important; 
+            border-color: var(--bs-pink-primary) !important; 
+            font-weight: bold;
+        }
+        .btn-primary:hover { 
+            background-color: var(--bs-pink-hover) !important; 
+            border-color: var(--bs-pink-hover) !important; 
+        }
+    </style>
+</head>
+<body>
+
+    <div class="error-container">
+        <i class="bi bi-person-fill-lock error-icon"></i>
+        <h1 class="error-title mt-3">Autenticação Necessária</h1>
+        
+        <p class="lead text-muted mt-3">
+            Ops, parece que ocorreu uma falha na sua autenticação.
+            Tente fazer o login novamente para acessar o sistema.
+        </p>
+
+        <a href="{{ url_for('Auth.login_page') }}" class="btn btn-primary btn-lg mt-4 w-100">
+            <i class="bi bi-box-arrow-in-right me-2"></i> Ir para Login
+        </a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <script>
+        // SweetAlert2 para mostrar o erro e redirecionar
+        document.addEventListener('DOMContentLoaded', function() {
+            Swal.fire({
+                title: 'Sessão Expirada ou Inválida!',
+                text: 'Por favor, faça o login novamente para continuar.',
+                icon: 'warning',
+                confirmButtonColor: '#d81b60',
+                allowOutsideClick: false // Impede o fechamento ao clicar fora
+            }).then(() => {
+                // Redireciona o usuário para a página de login
+                window.location.href = "{{ url_for('Auth.login_page') }}";
+            });
+        });
+    </script>
+</body>
+</html>

@@ -29,13 +29,13 @@
             max-width: 900px;
             width: 95%;
             border-radius: 15px;
-            overflow: hidden; /* Garante que o border-radius funcione nas colunas internas */
+            overflow: hidden;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
         }
 
         /* Coluna de Fundo/Visual */
         .visual-column {
-            background: linear-gradient(135deg, var(--bs-pink-primary), #ad164d); /* Gradiente */
+            background: linear-gradient(135deg, var(--bs-pink-primary), #ad164d);
             color: white;
             padding: 40px;
             display: flex;
@@ -105,7 +105,7 @@
                     <p class="text-muted">Acesso de Usuários e Administradores</p>
                 </div>
 
-                <form>
+                <form id="loginForm">
                     
                     <div class="mb-3">
                         <label for="inputUsername" class="form-label visually-hidden">Nome de Usuário</label>
@@ -124,7 +124,7 @@
                     </div>
                     
                     <div class="d-grid gap-2 mb-3">
-                        <button type="submit" class="btn btn-primary btn-lg">
+                        <button type="submit" class="btn btn-primary btn-lg" id="loginButton">
                             <i class="bi bi-box-arrow-in-right me-2"></i> Entrar no Sistema
                         </button>
                     </div>
@@ -144,5 +144,82 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('loginForm');
+            const loginButton = document.getElementById('loginButton');
+
+            // Captura o evento de submissão do formulário
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault(); // Impede o envio padrão do formulário
+                
+                const login = document.getElementById('inputUsername').value;
+                const senha = document.getElementById('inputPassword').value;
+
+                // Desabilita o botão para evitar cliques múltiplos
+                loginButton.disabled = true;
+                loginButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Acessando...';
+
+
+                // Prepara e mostra o alerta de processamento (opcional, SweetAlert2 fará isso)
+                
+                try {
+                    // Faz a requisição POST assíncrona para a rota de validação
+                    const response = await fetch("{{ url_for('Auth.validate_login') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            login: login,
+                            senha: senha
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Login bem-sucedido
+                        Swal.fire({
+                            title: 'Sucesso!',
+                            text: data.message,
+                            icon: 'success',
+                            confirmButtonColor: '#d81b60',
+                            showConfirmButton: false,
+                            timer: 1500
+                        }).then(() => {
+                            // Redireciona para a URL fornecida pelo backend (Home.home_page)
+                            window.location.href = data.redirect_url; 
+                        });
+                        
+                    } else {
+                        // Login falhou (resposta 400 ou 401 do Flask)
+                        Swal.fire({
+                            title: 'Erro de Login',
+                            text: data.message,
+                            icon: 'error',
+                            confirmButtonColor: '#d81b60'
+                        });
+                    }
+
+                } catch (error) {
+                    // Erro de rede ou servidor (conexão negada, etc.)
+                    console.error('Erro na submissão do login:', error);
+                    Swal.fire({
+                        title: 'Erro de Conexão',
+                        text: 'Não foi possível conectar-se ao servidor. Tente novamente.',
+                        icon: 'error',
+                        confirmButtonColor: '#d81b60'
+                    });
+                } finally {
+                    // Reabilita o botão após a conclusão (sucesso ou falha)
+                    loginButton.disabled = false;
+                    loginButton.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i> Entrar no Sistema';
+                }
+            });
+        });
+    </script>
 </body>
 </html>

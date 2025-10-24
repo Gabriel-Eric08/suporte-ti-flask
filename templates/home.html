@@ -59,7 +59,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link" href="{{ url_for('Cliente.cliente_page') }}">
                                 <i class="bi bi-shield-lock me-2"></i> Meus chamados
                             </a>
                         </li>
@@ -175,8 +175,7 @@
 
             const plataformaMap = {
                 'Computador': 1,
-                'Expresso': 2,
-                'SEI': 3
+                'Expresso/SEI': 2
             };
 
             const cargoMap = {

@@ -1,15 +1,18 @@
 from flask import Flask, Blueprint, render_template
 from flask import jsonify
-from models.models import Setor
+from models.models import Setor,Usuario
 from db_config import db
 from sqlalchemy.exc import SQLAlchemyError
+from utils.validate_auth import check_auth_status
 
 home_route=Blueprint('Home',__name__)
 
 @home_route.route('/')
 def home_page():
-    from models.models import Usuario
-
+    validate_status=check_auth_status()
+    if validate_status == False:
+        return render_template('auth_error.html')
+    
     usuario = Usuario.query.filter_by(login='admin').first()
     print(usuario)
     return render_template('home.html')

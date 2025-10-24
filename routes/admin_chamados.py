@@ -1,23 +1,54 @@
-from flask import Blueprint, request, render_template, jsonify
-# Certifique-se que TipoChamado está importado!
-from models.models import Chamado, TipoChamado, StatusChamado 
-from db_config import db
-from datetime import datetime, timezone 
+from flask import Blueprint, request, render_template, jsonify, redirect, url_for
+from models.models import Chamado, TipoChamado, Usuario, StatusChamado 
+from db_config import db 
+from datetime import datetime
+from utils.getUsername import getUsername
 
 admin_chamado_route = Blueprint('Admin_chamados', __name__)
 
+
+
+def verificar_admin_ou_funcionario():
+    """
+    Verifica se o usuário logado tem cargo_id 2 (Funcionário) ou 3 (Admin).
+    Retorna o objeto Usuario se autorizado, ou None caso contrário.
+    """
+    login_usuario = getUsername()
+    if not login_usuario:
+        return None # Não logado
+
+    # Busca o usuário pelo login armazenado no cookie
+    usuario = Usuario.query.filter_by(login=login_usuario).first()
+    
+    # Verifica se o usuário existe e se o cargo_id é 2 ou 3
+    if usuario and usuario.cargo_id in [2, 3]:
+        return usuario
+    
+    return None
+
+
 @admin_chamado_route.route('/')
 def admin_page():
-    # 1. Obter parâmetros de consulta do URL
+    # --- 0. VERIFICAÇÃO DE ACESSO ---
+    usuario_autorizado = verificar_admin_ou_funcionario()
+    
+    if usuario_autorizado is None:
+        # Se não for autorizado, renderiza o template de acesso negado
+        # e retorna o código de status HTTP 403 (Forbidden)
+        return render_template('admin_acesso_negado.html'), 403 
+    # -------------------------------
+    
+    # 1. Obter parâmetros de consulta do URL (Lógica mantida para autorizados)
     data_inicial_str = request.args.get('data_inicial')
     data_final_str = request.args.get('data_final')
     status_id_str = request.args.get('status_id')
-    tipo_id_str = request.args.get('tipo_id') # Valor selecionado para pré-seleção
+    tipo_id_str = request.args.get('tipo_id')
 
     # 2. Iniciar a consulta base
     query = Chamado.query
     
-    # 3. Aplicar filtros dinamicamente (mantendo a lógica anterior)
+    # 3. Aplicar filtros dinamicamente (Lógica mantida)
+    # ... (Seu código de filtros)
 
     # Filtro de Data Inicial 
     if data_inicial_str:
@@ -46,30 +77,27 @@ def admin_page():
         tipo_id = int(tipo_id_str)
         query = query.filter(Chamado.tipo_id == tipo_id)
 
-    # 4. Finalizar a ordenação e executar a consulta dos CHAMADOS
+    # 4. Finalizar a ordenação e executar a consulta
     chamados = query.order_by(Chamado.datetime.desc()).all()
-
-    # *************************************************************
-    # NOVO PASSO 1: Consultar os TIPOS DE CHAMADO
-    # *************************************************************
+    
+    # 5. Consultar Tipos de Chamado para o filtro
     tipos_chamado = TipoChamado.query.order_by(TipoChamado.nome_tipo).all()
-    
-    # Se o filtro de Status já estiver OK, você não precisa buscar ele novamente
-    # Apenas para garantir que o Status funcione se você o estiver usando na página
-    # status_chamado = StatusChamado.query.order_by(StatusChamado.status_id).all() 
-    
-    # 5. Renderizar o template com os chamados filtrados e a lista de tipos
+
+    # 6. Renderizar o template original para usuários autorizados
     return render_template(
-        'admin_page.html', 
+        'admin_page.html', # Certifique-se que este é o nome do template original
         chamados=chamados,
-        tipos=tipos_chamado,        # <-- PASSANDO A LISTA DE TIPOS
-        # status_list=status_chamado, # <-- Manter ou remover se não for necessário
-        request=request             # <-- Necessário para pré-selecionar o filtro
+        tipos=tipos_chamado,
+        request=request
     )
 
 @admin_chamado_route.route('/<int:id_chamado>', methods=['PUT'])
 def atender_chamado(id_chamado):
-    # Seu código existente...
+    # --- VERIFICAÇÃO DE ACESSO ---
+    if verificar_admin_ou_funcionario() is None:
+        return jsonify({"mensagem": "Acesso negado. Necessário ser Administrador ou Funcionário."}), 403
+    # ----------------------------
+
     chamado = Chamado.query.filter_by(id=id_chamado).one_or_none()
 
     if chamado is None:
@@ -82,7 +110,7 @@ def atender_chamado(id_chamado):
         db.session.commit()
         return jsonify({
             "mensagem": f"Chamado {id_chamado} atualizado para 'Em Atendimento'.",
-            "novo_status": chamado.status.nome_status
+            "novo_status": chamado.status.nome_status if chamado.status else 'Em Atendimento'
         }), 200
 
     except Exception as e:
@@ -91,10 +119,15 @@ def atender_chamado(id_chamado):
         return jsonify({"mensagem": "Erro interno ao atualizar o chamado."}), 500
 
 # --------------------------------------------------------
-# 1. ROTA ADICIONADA: CONCLUIR CHAMADO (status_id = 3)
+# ROTA: CONCLUIR CHAMADO
 # --------------------------------------------------------
 @admin_chamado_route.route('/concluir/<int:id_chamado>', methods=['PUT'])
 def concluir_chamado(id_chamado):
+    # --- VERIFICAÇÃO DE ACESSO ---
+    if verificar_admin_ou_funcionario() is None:
+        return jsonify({"mensagem": "Acesso negado. Necessário ser Administrador ou Funcionário."}), 403
+    # ----------------------------
+
     chamado = Chamado.query.filter_by(id=id_chamado).one_or_none()
 
     if chamado is None:
@@ -107,7 +140,7 @@ def concluir_chamado(id_chamado):
         db.session.commit()
         return jsonify({
             "mensagem": f"Chamado {id_chamado} concluído com sucesso.",
-            "novo_status": chamado.status.nome_status
+            "novo_status": chamado.status.nome_status if chamado.status else 'Concluído'
         }), 200
 
     except Exception as e:
@@ -117,10 +150,15 @@ def concluir_chamado(id_chamado):
 
 
 # --------------------------------------------------------
-# 2. ROTA ADICIONADA: RECUSAR CHAMADO (status_id = 4, exemplo)
+# ROTA: RECUSAR CHAMADO
 # --------------------------------------------------------
 @admin_chamado_route.route('/recusar/<int:id_chamado>', methods=['PUT'])
 def recusar_chamado(id_chamado):
+    # --- VERIFICAÇÃO DE ACESSO ---
+    if verificar_admin_ou_funcionario() is None:
+        return jsonify({"mensagem": "Acesso negado. Necessário ser Administrador ou Funcionário."}), 403
+    # ----------------------------
+    
     chamado = Chamado.query.filter_by(id=id_chamado).one_or_none()
 
     if chamado is None:
@@ -133,7 +171,7 @@ def recusar_chamado(id_chamado):
         db.session.commit()
         return jsonify({
             "mensagem": f"Chamado {id_chamado} recusado com sucesso.",
-            "novo_status": chamado.status.nome_status
+            "novo_status": chamado.status.nome_status if chamado.status else 'Recusado/Cancelado'
         }), 200
 
     except Exception as e:
