@@ -1,6 +1,10 @@
 from db_config import db
 from sqlalchemy.orm import relationship
-from datetime import datetime, timezone # Importe timezone
+from datetime import datetime, timezone 
+import pytz # Importa pytz para fusos horários
+
+# Define o fuso horário de Brasília
+FUSO_BRASILIA = pytz.timezone('America/Sao_Paulo')
 
 # ------------------------------------------------
 # TABELAS DE REFERÊNCIA (LOOKUP TABLES)
@@ -80,7 +84,7 @@ class StatusChamado(db.Model):
         return f"StatusChamado('{self.status_id}', '{self.nome_status}')"
 
 # ------------------------------------------------
-# Classe Chamado - ALTERADA: cargo e unidade_sei agora são TEXTO
+# Classe Chamado
 # ------------------------------------------------
 
 class Chamado(db.Model):
@@ -91,7 +95,8 @@ class Chamado(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     
     # 1. Data de Abertura (Original)
-    datetime = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    # CORRIGIDO: Usa o fuso horário de Brasília (FUSO_BRASILIA) no default
+    datetime = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(FUSO_BRASILIA))
     
     # 2. NOVAS COLUNAS DE TEMPO DE ACOMPANHAMENTO
     datetime_atendido = db.Column(db.DateTime, nullable=True) # Quando o status_id muda para 2
@@ -103,27 +108,20 @@ class Chamado(db.Model):
     cpf = db.Column(db.String(14))
     tipo_desc = db.Column(db.Text, nullable=True) 
 
-    # --- CHAVES ESTRANGEIRAS CORRIGIDAS (LOOKUP TABLES) ---
-    # CORRIGIDO: Referencia as PKs corretas (ex: setores.setor_id)
+    # --- CHAVES ESTRANGEIRAS ---
     setor_id = db.Column(db.Integer, db.ForeignKey('setores.setor_id'), nullable=False)
     tipo_id = db.Column(db.Integer, db.ForeignKey('tipos_chamado.tipo_id'), nullable=False)
     status_id = db.Column(db.Integer, db.ForeignKey('status_chamado.status_id'), nullable=False, default=1)
     plataforma_id = db.Column(db.Integer, db.ForeignKey('plataformas.plataforma_id'), nullable=True)
 
     # 3. CHAVE ESTRANGEIRA DO TÉCNICO RESPONSÁVEL
-    # Assumindo que a tabela 'usuarios' tem 'id' como PK
     tecnico_responsavel_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True)
     
-    # --- CAMPOS DE TEXTO (Substituindo FKs de Cargo e UnidadeSEI) ---
-    # ATENÇÃO: Se esses campos eram FKs antes, você deve ter removido as colunas FKs 
-    # e criado estas novas colunas TEXTO no banco.
+    # --- CAMPOS DE TEXTO ---
     cargo = db.Column(db.Text, nullable=True) 
     unidade_sei = db.Column(db.Text, nullable=True) 
     
     # Definição dos Relacionamentos
-    # ATENÇÃO: O `backref` do seu modelo anterior 'cargo' e 'unidade_sei' não é mais necessário
-    # nem possível, pois eles são agora colunas de texto (string) neste modelo.
-    
     setor = db.relationship('Setor', backref='chamados_setor_rel', lazy=True)
     tipo = db.relationship('TipoChamado', backref='chamados_tipo_rel', lazy=True)
     status = db.relationship('StatusChamado', backref='chamados_status_rel', lazy=True)

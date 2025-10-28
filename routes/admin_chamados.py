@@ -1,13 +1,15 @@
 from flask import Blueprint, request, render_template, jsonify, redirect, url_for
 from models.models import Chamado, TipoChamado, Usuario, StatusChamado 
 from db_config import db 
-from datetime import datetime, timezone # Importar timezone para consistência
+from datetime import datetime
+# REMOVIDO: timezone, para usar pytz
+import pytz # <-- NOVO: Importa pytz para fusos horários
 from utils.getUsername import getUsername
 
 admin_chamado_route = Blueprint('Admin_chamados', __name__)
 
-# Nota: A função verificar_admin_ou_funcionario() não precisa de alteração
-# Já retorna o objeto Usuario se autorizado.
+# Define o fuso horário de Brasília de forma global para o módulo
+FUSO_BRASILIA = pytz.timezone('America/Sao_Paulo')
 
 def verificar_admin_ou_funcionario():
     """
@@ -37,7 +39,7 @@ def admin_page():
         return render_template('admin_acesso_negado.html'), 403 
     # -------------------------------
     
-    # 1. Obter parâmetros de consulta do URL (Lógica mantida)
+    # 1. Obter parâmetros de consulta do URL
     data_inicial_str = request.args.get('data_inicial')
     data_final_str = request.args.get('data_final')
     status_id_str = request.args.get('status_id')
@@ -46,12 +48,14 @@ def admin_page():
     # 2. Iniciar a consulta base
     query = Chamado.query
     
-    # 3. Aplicar filtros dinamicamente (Lógica mantida)
+    # 3. Aplicar filtros dinamicamente
     # Filtro de Data Inicial 
     if data_inicial_str:
         try:
             data_inicial = datetime.strptime(data_inicial_str, '%Y-%m-%d')
-            query = query.filter(Chamado.datetime >= data_inicial)
+            # CORREÇÃO: Torna a data "aware" no fuso de Brasília, no início do dia
+            data_inicial_aware = FUSO_BRASILIA.localize(data_inicial.replace(hour=0, minute=0, second=0))
+            query = query.filter(Chamado.datetime >= data_inicial_aware)
         except ValueError:
             pass
 
@@ -61,7 +65,9 @@ def admin_page():
             data_final_base = datetime.strptime(data_final_str, '%Y-%m-%d')
             # Garante que pega até o final do dia
             data_final_limite = data_final_base.replace(hour=23, minute=59, second=59) 
-            query = query.filter(Chamado.datetime <= data_final_limite)
+            # CORREÇÃO: Torna a data "aware" no fuso de Brasília, no final do dia
+            data_final_aware = FUSO_BRASILIA.localize(data_final_limite)
+            query = query.filter(Chamado.datetime <= data_final_aware)
         except ValueError:
             pass
 
@@ -89,7 +95,7 @@ def admin_page():
         request=request
     )
 
-@admin_chamado_route.route('/<int:id_chamado>/atender', methods=['PUT']) # Alterado o endpoint para clareza
+@admin_chamado_route.route('/<int:id_chamado>/atender', methods=['PUT'])
 def atender_chamado(id_chamado):
     # --- VERIFICAÇÃO DE ACESSO E TÉCNICO ---
     tecnico = verificar_admin_ou_funcionario()
@@ -107,7 +113,8 @@ def atender_chamado(id_chamado):
         # Status 2: Em Atendimento
         chamado.status_id = 2
         # --- REGISTRA A DATA/HORA E O TÉCNICO RESPONSÁVEL ---
-        chamado.datetime_atendido = datetime.now(timezone.utc)
+        # CORRIGIDO: Usa o horário atual de Brasília
+        chamado.datetime_atendido = datetime.now(FUSO_BRASILIA) 
         chamado.tecnico_responsavel_id = tecnico.id 
     else:
         return jsonify({"mensagem": f"Chamado {id_chamado} já está em atendimento ou concluído."}), 400
@@ -116,7 +123,6 @@ def atender_chamado(id_chamado):
         db.session.commit()
         return jsonify({
             "mensagem": f"Chamado {id_chamado} atualizado para 'Em Atendimento'.",
-            # Acessa o nome do status pelo relacionamento
             "novo_status": chamado.status.nome_status if chamado.status else 'Em Atendimento'
         }), 200
 
@@ -128,7 +134,7 @@ def atender_chamado(id_chamado):
 # --------------------------------------------------------
 # ROTA: CONCLUIR CHAMADO
 # --------------------------------------------------------
-@admin_chamado_route.route('/<int:id_chamado>/concluir', methods=['PUT']) # Alterado o endpoint para clareza
+@admin_chamado_route.route('/<int:id_chamado>/concluir', methods=['PUT'])
 def concluir_chamado(id_chamado):
     # --- VERIFICAÇÃO DE ACESSO E TÉCNICO ---
     tecnico = verificar_admin_ou_funcionario()
@@ -141,14 +147,15 @@ def concluir_chamado(id_chamado):
     if chamado is None:
         return jsonify({"mensagem": f"Chamado com ID {id_chamado} não encontrado."}), 404
 
-    # Apenas mude se o status atual for 'Em Atendimento' (Status ID 2).
-    # Se quiser permitir de 1 para 3, ajuste a condição.
+    # Apenas mude se o status atual for 'Enviado' (1) ou 'Em Atendimento' (2).
     if chamado.status_id in [1, 2]:
         # Assumindo que o ID 3 é "Concluído"
         chamado.status_id = 3
         # --- REGISTRA A DATA/HORA DE CONCLUSÃO ---
-        chamado.datetime_concluido = datetime.now(timezone.utc)
-        # Garante que o responsável está registrado, mesmo que não tenha passado por 'atender'
+        # CORRIGIDO: Usa o horário atual de Brasília
+        chamado.datetime_concluido = datetime.now(FUSO_BRASILIA)
+        
+        # Garante que o responsável está registrado
         if chamado.tecnico_responsavel_id is None:
             chamado.tecnico_responsavel_id = tecnico.id 
     else:
@@ -171,7 +178,7 @@ def concluir_chamado(id_chamado):
 # --------------------------------------------------------
 # ROTA: RECUSAR CHAMADO
 # --------------------------------------------------------
-@admin_chamado_route.route('/<int:id_chamado>/recusar', methods=['PUT']) # Alterado o endpoint para clareza
+@admin_chamado_route.route('/<int:id_chamado>/recusar', methods=['PUT'])
 def recusar_chamado(id_chamado):
     # --- VERIFICAÇÃO DE ACESSO E TÉCNICO ---
     tecnico = verificar_admin_ou_funcionario()
