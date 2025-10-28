@@ -44,12 +44,6 @@ class Cargo(db.Model):
     def __repr__(self):
         return f"Cargo('{self.nome_cargo}')"
 
-# ------------------------------------------------
-# CORREÇÃO CRÍTICA 1: Renomeada de 'UnidadeSei' para 'UnidadeSEI' para 
-# coincidir com a referência na classe Chamado (unidade_sei = db.relationship('UnidadeSEI', ...)).
-# Se a intenção era 'UnidadeSei', mude a referência na classe Chamado.
-# Assumi que a referência em Chamado ('UnidadeSEI') está correta.
-# ------------------------------------------------
 class UnidadeSEI(db.Model):
     __tablename__ = 'unidades_sei'
     unidade_sei_id = db.Column(db.Integer, primary_key=True)
@@ -77,27 +71,16 @@ class Usuario(db.Model):
     def __repr__(self):
         return f"Usuario('{self.login}', '{self.nome}')"
     
-# ------------------------------------------------
-# Classe StatusChamado MUDANÇA 2: Definida ANTES de Chamado para evitar
-# problemas de inicialização se você não quiser usar strings.
-# REMOÇÃO DO CHAMADOS_STATUS (O relacionamento é definido em Chamado)
-# ------------------------------------------------
-
 class StatusChamado(db.Model):
     __tablename__ = 'status_chamado'
     status_id = db.Column(db.Integer, primary_key=True)
     nome_status = db.Column(db.String(50), nullable=False)
     
-    # RELACIONAMENTO SQLAlchemy
-    # O backref 'chamados_status_rel' será criado na classe StatusChamado
-    # pela definição na classe Chamado. 
-    # MANTENHA ESTA CLASSE SEM DEFINIÇÕES DE RELACIONAMENTO EXPLÍCITAS PARA EVITAR CONFLITOS.
-    
     def __repr__(self):
         return f"StatusChamado('{self.status_id}', '{self.nome_status}')"
 
 # ------------------------------------------------
-# Classe Chamado
+# Classe Chamado - ALTERADA: cargo e unidade_sei agora são TEXTO
 # ------------------------------------------------
 
 class Chamado(db.Model):
@@ -107,8 +90,12 @@ class Chamado(db.Model):
     # Colunas Principais
     id = db.Column(db.Integer, primary_key=True)
     
-    # CORREÇÃO 3: Usando now(timezone.utc) (prática recomendada)
+    # 1. Data de Abertura (Original)
     datetime = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    
+    # 2. NOVAS COLUNAS DE TEMPO DE ACOMPANHAMENTO
+    datetime_atendido = db.Column(db.DateTime, nullable=True) # Quando o status_id muda para 2
+    datetime_concluido = db.Column(db.DateTime, nullable=True) # Quando o status_id muda para 3
     
     # Informações do Solicitante
     user = db.Column(db.String(255))
@@ -116,34 +103,34 @@ class Chamado(db.Model):
     cpf = db.Column(db.String(14))
     tipo_desc = db.Column(db.Text, nullable=True) 
 
-    # Chaves Estrangeiras (Relacionamentos)
+    # --- CHAVES ESTRANGEIRAS CORRIGIDAS (LOOKUP TABLES) ---
+    # CORRIGIDO: Referencia as PKs corretas (ex: setores.setor_id)
     setor_id = db.Column(db.Integer, db.ForeignKey('setores.setor_id'), nullable=False)
     tipo_id = db.Column(db.Integer, db.ForeignKey('tipos_chamado.tipo_id'), nullable=False)
-    plataforma_id = db.Column(db.Integer, db.ForeignKey('plataformas.plataforma_id'), nullable=True)
-    cargo_id = db.Column(db.Integer, db.ForeignKey('cargos.cargo_id'), nullable=True)
-    unidade_sei_id = db.Column(db.Integer, db.ForeignKey('unidades_sei.unidade_sei_id'), nullable=True)
     status_id = db.Column(db.Integer, db.ForeignKey('status_chamado.status_id'), nullable=False, default=1)
+    plataforma_id = db.Column(db.Integer, db.ForeignKey('plataformas.plataforma_id'), nullable=True)
 
-    # Definição dos Relacionamentos (CORRIGIDO E UNIFICADO)
+    # 3. CHAVE ESTRANGEIRA DO TÉCNICO RESPONSÁVEL
+    # Assumindo que a tabela 'usuarios' tem 'id' como PK
+    tecnico_responsavel_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True)
     
-    # O backref deve ser único: 'chamados_setor_rel' vs 'setor' (Propriedade)
+    # --- CAMPOS DE TEXTO (Substituindo FKs de Cargo e UnidadeSEI) ---
+    # ATENÇÃO: Se esses campos eram FKs antes, você deve ter removido as colunas FKs 
+    # e criado estas novas colunas TEXTO no banco.
+    cargo = db.Column(db.Text, nullable=True) 
+    unidade_sei = db.Column(db.Text, nullable=True) 
+    
+    # Definição dos Relacionamentos
+    # ATENÇÃO: O `backref` do seu modelo anterior 'cargo' e 'unidade_sei' não é mais necessário
+    # nem possível, pois eles são agora colunas de texto (string) neste modelo.
+    
     setor = db.relationship('Setor', backref='chamados_setor_rel', lazy=True)
-    
-    # O backref deve ser único: 'chamados_tipo_rel' vs 'tipo' (Propriedade)
     tipo = db.relationship('TipoChamado', backref='chamados_tipo_rel', lazy=True)
-    
-    # O backref deve ser único: 'chamados_status_rel' vs 'status' (Propriedade)
     status = db.relationship('StatusChamado', backref='chamados_status_rel', lazy=True)
-    
-    # Certifique-se de que a classe 'Plataforma' existe e foi carregada
     plataforma = db.relationship('Plataforma', backref='chamados_plataforma_rel', lazy=True)
     
-    # Certifique-se de que a classe 'Cargo' existe e foi carregada
-    cargo = db.relationship('Cargo', backref='chamados_cargo_rel', lazy=True)
+    # RELACIONAMENTO PARA O TÉCNICO RESPONSÁVEL
+    tecnico_responsavel = db.relationship('Usuario', foreign_keys=[tecnico_responsavel_id], backref='chamados_atendidos', lazy=True)
     
-    # Usa a classe 'UnidadeSEI' (corrigida na definição acima)
-    unidade_sei = db.relationship('UnidadeSEI', backref='chamados_unidade_sei_rel', lazy=True)
-
     def __repr__(self):
-        # Acesso às informações relacionadas para exibição
-        return f"Chamado(ID: {self.id}, Solicitante: {self.nome_completo}, Setor: {self.setor.nome_setor if self.setor else 'N/A'}, Status: {self.status.nome_status if self.status else 'N/A'})"
+        return f"Chamado(ID: {self.id}, Solicitante: {self.nome_completo}, Status: {self.status.nome_status if self.status else 'N/A'})"

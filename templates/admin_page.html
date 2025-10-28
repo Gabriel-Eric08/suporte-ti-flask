@@ -174,10 +174,10 @@
                                     {# LÓGICA DE COR RESOLVIDA DIRETAMENTE NO JINJA2 USANDO status_id #}
                                     {% set status_id = chamado.status_id %}
                                     {% set badge_color = 'info' if status_id == 1 
-                                                             else 'warning' if status_id == 2 
-                                                             else 'success' if status_id == 3 
-                                                             else 'danger' if status_id == 4 
-                                                             else 'secondary' %}
+                                                            else 'warning' if status_id == 2 
+                                                            else 'success' if status_id == 3 
+                                                            else 'danger' if status_id == 4 
+                                                            else 'secondary' %}
                                     
                                     <tr>
                                         <td>{{ chamado.id }}</td>
@@ -205,7 +205,7 @@
                                                 data-chamado-id="{{ chamado.id }}"
                                                 title="Visualizar Ações"
                                             >
-                                                <i class="bi bi-eye"></i>
+                                                <i class="bi bi-gear"></i>
                                             </button>
                                         </td>
                                     </tr>
@@ -237,6 +237,11 @@
                     <p class="text-muted">Selecione uma ação para este chamado.</p>
                     
                     <div class="d-grid gap-2">
+                        {# NOVO BOTÃO: VER DETALHES #}
+                        <button type="button" class="btn btn-info btn-lg text-white" id="btnVerDetalhes">
+                            <i class="bi bi-file-earmark-text me-2"></i> Ver Detalhes
+                        </button>
+
                         <button type="button" class="btn btn-success btn-lg" id="btnAtender">
                             <i class="bi bi-person-fill-gear me-2"></i> Atender
                         </button>
@@ -264,8 +269,8 @@
     <script>
         // ====================================================================
         // VARIÁVEIS DE URL (CONFIGURADAS PELO JINJA2)
-        // O Flask/Jinja2 irá preencher estas variáveis antes de enviar ao navegador
         // ====================================================================
+        const ROTA_BASE_DETALHES = "{{ url_for('Chamados.detalhes_chamado', id_chamado=0)|safe }}"; // <-- NOVA ROTA AQUI
         const ROTA_BASE_ATENDER = "{{ url_for('Admin_chamados.atender_chamado', id_chamado=0)|safe }}";
         const ROTA_BASE_CONCLUIR = "{{ url_for('Admin_chamados.concluir_chamado', id_chamado=0)|safe }}";
         const ROTA_BASE_RECUSAR = "{{ url_for('Admin_chamados.recusar_chamado', id_chamado=0)|safe }}"; 
@@ -278,8 +283,7 @@
         }
 
         // ====================================================================
-        // FUNÇÕES DE AÇÃO AJAX (fetch)
-        // (Lógica de atualização de status, mantida)
+        // FUNÇÕES DE AÇÃO AJAX (fetch) - MANTIDAS
         // ====================================================================
 
         async function atualizarStatusChamado(chamadoId, rotaUrl, acaoNome) {
@@ -339,10 +343,11 @@
         }
 
         // ====================================================================
-        // LÓGICA DO MODAL E BOTÕES DE AÇÃO (Mantida)
+        // LÓGICA DO MODAL E BOTÕES DE AÇÃO (ATUALIZADA)
         // ====================================================================
 
         const modalAcoes = document.getElementById('modalAcoes');
+        const btnVerDetalhes = document.getElementById('btnVerDetalhes'); // <-- NOVO BOTÃO
         const btnAtender = document.getElementById('btnAtender');
         const btnConcluir = document.getElementById('btnConcluir');
         const btnRecusar = document.getElementById('btnRecusar');
@@ -354,6 +359,18 @@
             modalTitle.textContent = chamadoId;
         });
         
+        // NOVO EVENTO: Redirecionar para a página de Detalhes
+        btnVerDetalhes.addEventListener('click', function() {
+            const chamadoId = modalAcoes.querySelector('#chamadoIdDisplay').textContent;
+            const rotaCompleta = construirRota(ROTA_BASE_DETALHES, chamadoId);
+            
+            // Fecha o modal e navega para a rota de detalhes
+            const modalInstance = bootstrap.Modal.getInstance(modalAcoes);
+            modalInstance.hide();
+            window.location.href = rotaCompleta;
+        });
+        
+        // Eventos Atender, Concluir e Recusar (Mantidos)
         btnAtender.addEventListener('click', function() {
             const chamadoId = modalAcoes.querySelector('#chamadoIdDisplay').textContent;
             const rotaCompleta = construirRota(ROTA_BASE_ATENDER, chamadoId); 

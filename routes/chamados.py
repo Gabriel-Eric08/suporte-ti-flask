@@ -1,11 +1,37 @@
-from flask import Flask, Blueprint, request, jsonify
-# Importe todos os modelos necessários para validação
-from models.models import Chamado, TipoChamado, Setor, Plataforma, Cargo, UnidadeSEI
+from flask import Flask, Blueprint, request, jsonify, render_template
+# Importe apenas os modelos necessários para as FKs restantes
+# Certifique-se de que Setor, TipoChamado, Plataforma e Chamado estão importados do seu models.py
+from models.models import Chamado, TipoChamado, Setor, Plataforma 
 from datetime import datetime
 from db_config import db
-# from utils.getUsername import getUsername # (Não usado na rota, mas mantido)
+from sqlalchemy import and_ # Adicionado para a lógica de cálculo de posição
 
 chamados_route = Blueprint('Chamados', __name__)
+
+# ======================================================================
+# FUNÇÃO DE CÁLCULO DE POSIÇÃO (Lógica do Negócio)
+# ======================================================================
+
+def calcular_posicao_na_fila(novo_chamado_id):
+    """
+    Calcula a quantidade de chamados ENVIADOS (status_id=1) 
+    que foram criados ANTES do chamado com o ID fornecido.
+    A posição é a contagem + 1. Assume que o ID é autoincrementável.
+    """
+    # Contamos quantos chamados com status_id = 1 têm um ID MENOR que o novo chamado
+    contagem_antes = Chamado.query.filter(
+        and_(
+            Chamado.status_id == 1,
+            Chamado.id < novo_chamado_id
+        )
+    ).count()
+    
+    # Sua posição na fila é a quantidade de pessoas na sua frente + 1
+    return contagem_antes + 1
+
+# ======================================================================
+# ROTA DE ENVIO DE CHAMADO (POST) - CORRIGIDO 'desc' PARA 'tipo_desc'
+# ======================================================================
 
 @chamados_route.route('/', methods=['POST'])
 def enviar_chamado():
@@ -20,17 +46,21 @@ def enviar_chamado():
     # --- 1. Inicialização de Variáveis e Extração de Dados ---
     
     # Campos base obrigatórios
-    nome_completo = data.get('nome_completo')  # Nome completo é obrigatório para o Chamado
+    nome_completo = data.get('nome_completo')
     setor_id = data.get('setor_id')
     tipo_id = data.get('tipo_id')
     
     # Campos opcionais ou condicionais
-    desc = data.get('desc')
+    # A variável Python ainda pode se chamar 'desc', mas o atributo do modelo é 'tipo_desc'
+    desc = data.get('desc') 
     cpf = data.get('cpf')
     plataforma_id = data.get('plataforma_id')
-    cargo_id = data.get('cargo_id')
-    unidade_sei_id = data.get('unidade_sei_id')
-    user_login = data.get('user') # Assumindo que 'user' é o login, se houver
+    
+    # NOVOS CAMPOS TEXTO 
+    cargo = data.get('cargo')
+    unidade_sei = data.get('unidade_sei')
+    
+    user_login = data.get('user')
     
     # --- 2. Validação de Campos Base ---
     
@@ -52,14 +82,13 @@ def enviar_chamado():
             
     # Tipo 6: Criação de Novo Login (Requer cpf, cargo e unidade_sei)
     elif tipo_id == 6:
-        if not cpf or not cargo_id or not unidade_sei_id:
+        if not cpf or not cargo or not unidade_sei:
             return jsonify({
                 "success": False,
-                "message": "Chamado para criação de login (tipo 6) necessita dos campos: cpf, cargo_id e unidade_sei_id."
+                "message": "Chamado para criação de login (tipo 6) necessita dos campos: cpf, cargo e unidade_sei."
             }), 400
 
     # --- 4. Validação de Integridade de Chaves Estrangeiras ---
-    # Garante que os IDs fornecidos existam no banco de dados.
 
     if not Setor.query.get(setor_id):
         return jsonify({"success": False, "message": f"Setor ID {setor_id} inválido."}), 400
@@ -69,11 +98,6 @@ def enviar_chamado():
     if plataforma_id and not Plataforma.query.get(plataforma_id):
         return jsonify({"success": False, "message": f"Plataforma ID {plataforma_id} inválida."}), 400
     
-    if cargo_id and not Cargo.query.get(cargo_id):
-        return jsonify({"success": False, "message": f"Cargo ID {cargo_id} inválido."}), 400
-    
-    if unidade_sei_id and not UnidadeSEI.query.get(unidade_sei_id):
-        return jsonify({"success": False, "message": f"Unidade SEI ID {unidade_sei_id} inválida."}), 400
     
     # --- 5. Criação e Inserção do Novo Chamado ---
     
@@ -82,35 +106,78 @@ def enviar_chamado():
         nome_completo=nome_completo,
         setor_id=setor_id,
         tipo_id=tipo_id,
+        status_id=1, # Configura o status inicial como ENVIADO (1)
         
         # Campos de dados
-        user=user_login, # Se houver um login
-        tipo_desc=desc,
+        user=user_login,
+        tipo_desc=desc, # <--- CORRIGIDO: Passando 'desc' para o campo 'tipo_desc' do modelo
         cpf=cpf,
         
         # Chaves Estrangeiras opcionais/condicionais
         plataforma_id=plataforma_id,
-        cargo_id=cargo_id,
-        unidade_sei_id=unidade_sei_id,
         
-        # status_id é definido por DEFAULT=1 no banco de dados (Enviado)
-        # datetime é definido por DEFAULT no banco de dados ou no modelo (datetime.utcnow)
+        # NOVOS CAMPOS TEXTO
+        cargo=cargo,
+        unidade_sei=unidade_sei,
+        
     )
     
     try:
         db.session.add(novo_chamado)
         db.session.commit()
         
+        # O ID é gerado após o commit para o objeto 'novo_chamado'
+        novo_chamado_id = novo_chamado.id
+        
+        # 6. CÁLCULO E RETORNO DA POSIÇÃO NA FILA
+        posicao = calcular_posicao_na_fila(novo_chamado_id)
+
         return jsonify({
             "success": True,
             "message": "Chamado registrado com sucesso!",
-            "id": novo_chamado.id
+            "id": novo_chamado_id,
+            "posicao_na_fila": posicao # <-- CHAVE EXPORTADA PARA O JS
         }), 201 # 201 Created
         
     except Exception as e:
         db.session.rollback()
         print(f"Erro ao salvar chamado: {e}")
+        # Se ocorrer um erro aqui, é um erro de banco de dados (500)
         return jsonify({
             "success": False,
             "message": "Erro interno ao salvar chamado no banco de dados."
         }), 500
+    
+# Rota /last (mantida do seu código original)
+@chamados_route.route('/last', methods=['GET'])
+def posicao_fila():
+    """
+    Retorna a quantidade total de chamados atualmente com status 'Enviado' (status_id=1).
+    """
+    try:
+        quantidade_enviados = Chamado.query.filter_by(status_id=1).count()
+        
+        return jsonify({
+            "success": True,
+            "status_name": "Enviado",
+            "status_id": 1,
+            "quantidade": quantidade_enviados
+        }), 200
+
+    except Exception as e:
+        print(f"Erro ao buscar quantidade de chamados: {e}")
+        return jsonify({
+            "success": False,
+            "message": "Erro interno ao consultar o banco de dados."
+        }), 500
+    
+@chamados_route.route('/<id_chamado>')
+def detalhes_chamado(id_chamado):
+    # CORREÇÃO: Usar .first() para obter um único objeto, não uma Query.
+    chamado = Chamado.query.filter_by(id=id_chamado).first() 
+    
+    if chamado is None:
+        # Tratar caso o chamado não exista (exemplo: abort(404))
+        pass 
+        
+    return render_template('detalhes_chamado.html', chamado=chamado)

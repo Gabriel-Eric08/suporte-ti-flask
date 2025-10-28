@@ -158,14 +158,13 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const tipoProblemaSelect = document.getElementById('tipoProblema');
-            const setorSolicitanteSelect = document.getElementById('setorSolicitante'); // NOVO SELECT
+            const setorSolicitanteSelect = document.getElementById('setorSolicitante'); 
             const camposVariaveisDiv = document.getElementById('camposVariaveis');
             const campoDescricaoGeralDiv = document.getElementById('campoDescricaoGeral');
             const formChamado = document.getElementById('formChamado');
 
             // ====================================================================
-            // 1. Dicionários de Mapeamento (Lookup Tables) - COM VALORES ATUALIZADOS
-            //    Estes valores DEVEM CORRESPONDER aos IDs reais no seu MySQL.
+            // 1. Dicionários de Mapeamento (Lookup Tables)
             // ====================================================================
             const setorMap = {
                 'Enfrentamento': 1,
@@ -177,23 +176,11 @@
                 'Computador': 1,
                 'Expresso/SEI': 2
             };
-
-            const cargoMap = {
-                'Usuário': 1,
-                'Funcionário': 2,
-                'Gerente': 3 
-            };
             
-            const unidadeSeiMap = {
-                'Secretaria da Mulher': 1,
-                'Unidade Administrativa 02': 2
-            };
-
             // --- FUNÇÃO DE POPULAR O SELECT DO SETOR ---
             function popularSetorSelect() {
                 let setorOptions = '';
                 for (const nome in setorMap) {
-                    // O valor do option é o NOME, que será mapeado para ID no submit
                     setorOptions += `<option value="${nome}">${nome}</option>`;
                 }
                 setorSolicitanteSelect.insertAdjacentHTML('beforeend', setorOptions);
@@ -215,7 +202,6 @@
                 if (tipo === '5') {
                     campoDescricaoGeralDiv.classList.remove('d-none');
 
-                    // Cria opções de plataforma dinamicamente do Map
                     let plataformaOptions = '<option value="" selected disabled>Selecione a plataforma</option>';
                     for (const nome in plataformaMap) {
                         plataformaOptions += `<option value="${nome}">${nome}</option>`;
@@ -240,16 +226,6 @@
                 else if (tipo === '6') {
                     campoDescricaoGeralDiv.classList.remove('d-none');
                     
-                    // Cria opções de cargo e unidade dinamicamente
-                    let cargoOptions = '<option value="" selected disabled>Selecione o cargo</option>';
-                    for (const nome in cargoMap) {
-                        cargoOptions += `<option value="${nome}">${nome}</option>`;
-                    }
-                    let unidadeOptions = '<option value="" selected disabled>Selecione a unidade</option>';
-                    for (const nome in unidadeSeiMap) {
-                        unidadeOptions += `<option value="${nome}">${nome}</option>`;
-                    }
-
                     camposVariaveisDiv.innerHTML = `
                         <div class="alert alert-info border-start border-3 border-info" role="alert">
                             <i class="bi bi-info-circle-fill me-2"></i> **Preencha com os dados do NOVO USUÁRIO**
@@ -261,15 +237,11 @@
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label for="cargoInput" class="form-label">Cargo</label>
-                                <select class="form-select" id="cargoInput" name="cargoInput" required>
-                                    ${cargoOptions}
-                                </select>
+                                <input type="text" class="form-control" id="cargoInput" name="cargoInput" placeholder="Ex: Analista de TI" required>
                             </div>
                             <div class="col-md-6">
                                 <label for="unidadeSeiInput" class="form-label">Unidade/Setor que o usuário terá acesso no SEI</label>
-                                <select class="form-select" id="unidadeSeiInput" name="unidadeSeiInput" required>
-                                    ${unidadeOptions}
-                                </select>
+                                <input type="text" class="form-control" id="unidadeSeiInput" name="unidadeSeiInput" placeholder="Ex: Secretaria da Mulher" required>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -280,19 +252,19 @@
                 } 
                 
                 // ====================================================================
-                // OUTROS CASOS (Se nenhuma opção válida está selecionada)
+                // OUTROS CASOS
                 // ====================================================================
                 else if (tipo === '') {
-                     camposVariaveisDiv.innerHTML = `
-                        <p class="text-center text-muted p-4 bg-light rounded">
-                            * Por favor, selecione um tipo de problema acima para continuar.
-                        </p>
-                    `;
+                        camposVariaveisDiv.innerHTML = `
+                            <p class="text-center text-muted p-4 bg-light rounded">
+                                * Por favor, selecione um tipo de problema acima para continuar.
+                            </p>
+                        `;
                 }
             }
 
             // --- EXECUÇÃO INICIAL ---
-            popularSetorSelect(); // Popula o novo SELECT de Setor
+            popularSetorSelect(); 
             renderCamposVariaveis(tipoProblemaSelect.value);
 
             // --- EVENT LISTENERS ---
@@ -301,14 +273,14 @@
             });
 
             // ====================================================================
-            // 2. FUNÇÃO DE SUBMISSÃO (Onde ocorre a conversão de nome para ID)
+            // 2. FUNÇÃO DE SUBMISSÃO (Onde a chave 'desc' é gerada para o JSON)
             // ====================================================================
 
             formChamado.addEventListener('submit', async function(event) {
                 event.preventDefault();
 
                 const tipo = tipoProblemaSelect.value;
-                const setorNome = setorSolicitanteSelect.value; // Agora lê do SELECT
+                const setorNome = setorSolicitanteSelect.value;
 
                 // Validação de campos principais
                 if (!tipo || !setorNome || setorNome === '') {
@@ -327,11 +299,12 @@
                     nome_completo: document.getElementById('nomeSolicitante').value,
                     setor_id: setorId,
                     tipo_id: parseInt(tipo),
-                    desc: document.getElementById('descricaoGeral').value || null,
+                    // O campo aqui se chama 'desc', que é o que o PY espera
+                    desc: document.getElementById('descricaoGeral').value || null, 
                     cpf: null,
                     plataforma_id: null,
-                    cargo_id: null,
-                    unidade_sei_id: null
+                    cargo: null, 
+                    unidade_sei: null 
                 };
                 
                 // Pega o login do usuário dos cookies (se existir)
@@ -339,7 +312,7 @@
                 if(usernameCookie) {
                     payload.user = usernameCookie.split('=')[1];
                 } else {
-                    payload.user = payload.nome_completo;
+                    payload.user = payload.nome_completo; 
                 }
 
 
@@ -356,26 +329,30 @@
                 } 
                 
                 else if (tipo === '6') {
-                    const cargoNome = document.getElementById('cargoInput').value;
-                    const unidadeNome = document.getElementById('unidadeSeiInput').value;
+                    // CAPTURA DOS NOVOS INPUTS DE TEXTO
+                    const cargoTexto = document.getElementById('cargoInput').value.trim();
+                    const unidadeTexto = document.getElementById('unidadeSeiInput').value.trim();
                     const acessos = document.getElementById('acessosAdicionais').value;
 
-                    payload.cpf = document.getElementById('cpfInput').value;
-                    payload.cargo_id = cargoMap[cargoNome] || null;
-                    payload.unidade_sei_id = unidadeSeiMap[unidadeNome] || null;
+                    payload.cpf = document.getElementById('cpfInput').value.trim();
+                    payload.cargo = cargoTexto; 
+                    payload.unidade_sei = unidadeTexto; 
                     
-                    // Adiciona acessos adicionais à descrição
-                    payload.desc = (payload.desc ? payload.desc + "\n" : "") + "ACESSOS ADICIONAIS: " + acessos;
+                    // Adiciona acessos adicionais à descrição (se houver)
+                    let descBase = payload.desc ? payload.desc + "\n" : "";
+                    if (acessos.trim()) {
+                        payload.desc = descBase + "ACESSOS ADICIONAIS: " + acessos;
+                    }
 
-                    if (!payload.cpf || !payload.cargo_id || !payload.unidade_sei_id) {
+                    if (!payload.cpf || !payload.cargo || !payload.unidade_sei) {
                          Swal.fire('Erro!', 'Preencha todos os dados de novo login (CPF, Cargo e Unidade SEI).', 'error');
                          return;
                     }
                 }
                 
-                // Limpeza final do payload (remove chaves com valor null antes de enviar)
+                // Limpeza final do payload (remove chaves com valor null/vazio antes de enviar)
                 Object.keys(payload).forEach(key => {
-                    if (payload[key] === null) {
+                    if (payload[key] === null || payload[key] === '') {
                         delete payload[key];
                     }
                 });
@@ -397,15 +374,23 @@
                     const result = await response.json();
 
                     if (response.ok && result.success) {
+                        
+                        let swalText = `Seu chamado foi registrado com sucesso! (ID: ${result.id})`;
+                        
+                        if (result.posicao_na_fila !== undefined) {
+                            swalText += `<br><br>Você é o **${result.posicao_na_fila}º** na fila de atendimento.`
+                        }
+                        
                         Swal.fire({
-                            title: 'Sucesso!',
-                            text: result.message + (result.id ? ` ID: ${result.id}` : ''),
+                            title: 'Chamado Enviado!',
+                            html: swalText,
                             icon: 'success',
                             confirmButtonColor: 'var(--bs-pink-primary)'
                         }).then(() => {
                             formChamado.reset(); 
                             renderCamposVariaveis(''); // Reseta a visualização
                         });
+                        
                     } else {
                         Swal.fire('Erro!', result.message || 'Ocorreu um erro desconhecido ao enviar o chamado.', 'error');
                     }

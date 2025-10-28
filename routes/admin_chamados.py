@@ -1,12 +1,13 @@
 from flask import Blueprint, request, render_template, jsonify, redirect, url_for
 from models.models import Chamado, TipoChamado, Usuario, StatusChamado 
 from db_config import db 
-from datetime import datetime
+from datetime import datetime, timezone # Importar timezone para consistência
 from utils.getUsername import getUsername
 
 admin_chamado_route = Blueprint('Admin_chamados', __name__)
 
-
+# Nota: A função verificar_admin_ou_funcionario() não precisa de alteração
+# Já retorna o objeto Usuario se autorizado.
 
 def verificar_admin_ou_funcionario():
     """
@@ -33,12 +34,10 @@ def admin_page():
     usuario_autorizado = verificar_admin_ou_funcionario()
     
     if usuario_autorizado is None:
-        # Se não for autorizado, renderiza o template de acesso negado
-        # e retorna o código de status HTTP 403 (Forbidden)
         return render_template('admin_acesso_negado.html'), 403 
     # -------------------------------
     
-    # 1. Obter parâmetros de consulta do URL (Lógica mantida para autorizados)
+    # 1. Obter parâmetros de consulta do URL (Lógica mantida)
     data_inicial_str = request.args.get('data_inicial')
     data_final_str = request.args.get('data_final')
     status_id_str = request.args.get('status_id')
@@ -48,8 +47,6 @@ def admin_page():
     query = Chamado.query
     
     # 3. Aplicar filtros dinamicamente (Lógica mantida)
-    # ... (Seu código de filtros)
-
     # Filtro de Data Inicial 
     if data_inicial_str:
         try:
@@ -62,7 +59,8 @@ def admin_page():
     if data_final_str:
         try:
             data_final_base = datetime.strptime(data_final_str, '%Y-%m-%d')
-            data_final_limite = data_final_base.replace(hour=23, minute=59, second=59)
+            # Garante que pega até o final do dia
+            data_final_limite = data_final_base.replace(hour=23, minute=59, second=59) 
             query = query.filter(Chamado.datetime <= data_final_limite)
         except ValueError:
             pass
@@ -85,31 +83,40 @@ def admin_page():
 
     # 6. Renderizar o template original para usuários autorizados
     return render_template(
-        'admin_page.html', # Certifique-se que este é o nome do template original
+        'admin_page.html', 
         chamados=chamados,
         tipos=tipos_chamado,
         request=request
     )
 
-@admin_chamado_route.route('/<int:id_chamado>', methods=['PUT'])
+@admin_chamado_route.route('/<int:id_chamado>/atender', methods=['PUT']) # Alterado o endpoint para clareza
 def atender_chamado(id_chamado):
-    # --- VERIFICAÇÃO DE ACESSO ---
-    if verificar_admin_ou_funcionario() is None:
+    # --- VERIFICAÇÃO DE ACESSO E TÉCNICO ---
+    tecnico = verificar_admin_ou_funcionario()
+    if tecnico is None:
         return jsonify({"mensagem": "Acesso negado. Necessário ser Administrador ou Funcionário."}), 403
-    # ----------------------------
+    # -------------------------------------
 
     chamado = Chamado.query.filter_by(id=id_chamado).one_or_none()
 
     if chamado is None:
         return jsonify({"mensagem": f"Chamado com ID {id_chamado} não encontrado."}), 404
-
-    # Status 2: Em Atendimento
-    chamado.status_id = 2
+    
+    # Apenas mude se o status atual for 'Enviado' (Status ID 1)
+    if chamado.status_id == 1:
+        # Status 2: Em Atendimento
+        chamado.status_id = 2
+        # --- REGISTRA A DATA/HORA E O TÉCNICO RESPONSÁVEL ---
+        chamado.datetime_atendido = datetime.now(timezone.utc)
+        chamado.tecnico_responsavel_id = tecnico.id 
+    else:
+        return jsonify({"mensagem": f"Chamado {id_chamado} já está em atendimento ou concluído."}), 400
 
     try:
         db.session.commit()
         return jsonify({
             "mensagem": f"Chamado {id_chamado} atualizado para 'Em Atendimento'.",
+            # Acessa o nome do status pelo relacionamento
             "novo_status": chamado.status.nome_status if chamado.status else 'Em Atendimento'
         }), 200
 
@@ -121,20 +128,32 @@ def atender_chamado(id_chamado):
 # --------------------------------------------------------
 # ROTA: CONCLUIR CHAMADO
 # --------------------------------------------------------
-@admin_chamado_route.route('/concluir/<int:id_chamado>', methods=['PUT'])
+@admin_chamado_route.route('/<int:id_chamado>/concluir', methods=['PUT']) # Alterado o endpoint para clareza
 def concluir_chamado(id_chamado):
-    # --- VERIFICAÇÃO DE ACESSO ---
-    if verificar_admin_ou_funcionario() is None:
+    # --- VERIFICAÇÃO DE ACESSO E TÉCNICO ---
+    tecnico = verificar_admin_ou_funcionario()
+    if tecnico is None:
         return jsonify({"mensagem": "Acesso negado. Necessário ser Administrador ou Funcionário."}), 403
-    # ----------------------------
+    # -------------------------------------
 
     chamado = Chamado.query.filter_by(id=id_chamado).one_or_none()
 
     if chamado is None:
         return jsonify({"mensagem": f"Chamado com ID {id_chamado} não encontrado."}), 404
 
-    # Assumindo que o ID 3 é "Concluído"
-    chamado.status_id = 3 
+    # Apenas mude se o status atual for 'Em Atendimento' (Status ID 2).
+    # Se quiser permitir de 1 para 3, ajuste a condição.
+    if chamado.status_id in [1, 2]:
+        # Assumindo que o ID 3 é "Concluído"
+        chamado.status_id = 3
+        # --- REGISTRA A DATA/HORA DE CONCLUSÃO ---
+        chamado.datetime_concluido = datetime.now(timezone.utc)
+        # Garante que o responsável está registrado, mesmo que não tenha passado por 'atender'
+        if chamado.tecnico_responsavel_id is None:
+            chamado.tecnico_responsavel_id = tecnico.id 
+    else:
+        return jsonify({"mensagem": f"Chamado {id_chamado} já está concluído ou recusado."}), 400
+
 
     try:
         db.session.commit()
@@ -152,20 +171,29 @@ def concluir_chamado(id_chamado):
 # --------------------------------------------------------
 # ROTA: RECUSAR CHAMADO
 # --------------------------------------------------------
-@admin_chamado_route.route('/recusar/<int:id_chamado>', methods=['PUT'])
+@admin_chamado_route.route('/<int:id_chamado>/recusar', methods=['PUT']) # Alterado o endpoint para clareza
 def recusar_chamado(id_chamado):
-    # --- VERIFICAÇÃO DE ACESSO ---
-    if verificar_admin_ou_funcionario() is None:
+    # --- VERIFICAÇÃO DE ACESSO E TÉCNICO ---
+    tecnico = verificar_admin_ou_funcionario()
+    if tecnico is None:
         return jsonify({"mensagem": "Acesso negado. Necessário ser Administrador ou Funcionário."}), 403
-    # ----------------------------
+    # -------------------------------------
     
     chamado = Chamado.query.filter_by(id=id_chamado).one_or_none()
 
     if chamado is None:
         return jsonify({"mensagem": f"Chamado com ID {id_chamado} não encontrado."}), 404
 
-    # Assumindo que o ID 4 é "Recusado/Cancelado"
-    chamado.status_id = 4 
+    # Apenas recusamos se não estiver já concluído ou recusado.
+    if chamado.status_id not in [3, 4]: 
+        # Assumindo que o ID 4 é "Recusado/Cancelado"
+        chamado.status_id = 4 
+        # REGISTRA O TÉCNICO QUE RECUSOU (pode ser útil)
+        if chamado.tecnico_responsavel_id is None:
+            chamado.tecnico_responsavel_id = tecnico.id 
+    else:
+        return jsonify({"mensagem": f"Chamado {id_chamado} já está concluído ou recusado."}), 400
+
 
     try:
         db.session.commit()

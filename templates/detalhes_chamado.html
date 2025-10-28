@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes do Chamado #{{ chamado.id }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        /* Variáveis de Estilo do Template Anterior */
+        :root {
+            --bs-pink-primary: #d81b60;
+            --bs-pink-hover: #ff69b4;
+            --bs-bg-light: #f9f9f9;
+            --bs-bg-white: #ffffff;
+            --bs-text-muted: #6c757d;
+        }
+
+        body { background-color: var(--bs-bg-light); }
+        .sidebar { height: 100vh; background-color: var(--bs-bg-white); padding-top: 20px; box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1); border-right: 3px solid var(--bs-pink-primary); }
+        .sidebar .sidebar-header { color: var(--bs-pink-primary); font-weight: bold; text-transform: uppercase; }
+        .sidebar .nav-link { color: var(--bs-pink-primary); padding: 15px 20px; font-weight: 500; border-left: 5px solid transparent; transition: all 0.3s; }
+        .sidebar .nav-link:hover { background-color: #fff0f5; color: var(--bs-pink-hover); border-left: 5px solid var(--bs-pink-hover); }
+        /* Mantendo a cor de um item como 'active' para simular a página atual */
+        .sidebar .nav-link.active { background-color: #fff0f5; color: var(--bs-pink-primary); border-left: 5px solid var(--bs-pink-primary); font-weight: bold; }
+        .main-content { padding: 30px; min-height: 100vh; }
+        
+        /* Estilos específicos para a página de detalhes */
+        .detail-label { font-weight: 600; color: #495057; display: block; margin-bottom: 5px; }
+        .detail-value { font-size: 1.1rem; color: #212529; padding: 8px 0; border-bottom: 1px dashed #e9ecef; }
+        .card-header-chamado { background-color: #fce4ec; border-bottom: 3px solid var(--bs-pink-primary); }
+        .status-badge { font-size: 0.9em; padding: 0.5em 0.8em; }
+        
+        /* Cores dinâmicas do Status */
+        .status-1 { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; } /* ENVIADO */
+        .status-2 { background-color: #e2f0fd; color: #007bff; border: 1px solid #cce5ff; } /* EM ATENDIMENTO */
+        .status-3 { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; } /* CONCLUÍDO */
+        .status-4 { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; } /* RECUSADO/CANCELADO (Adicionado) */
+        
+        .description-box { background-color: #f8f9fa; border-left: 5px solid var(--bs-pink-primary); padding: 15px; border-radius: 5px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+
+    <div class="container-fluid">
+        <div class="row">
+            
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar">
+                <div class="position-sticky">
+                    
+                    <div class="sidebar-header text-center mb-4 pb-3 border-bottom">
+                        <i class="bi bi-person-workspace me-2"></i> Suporte TI
+                    </div>
+
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('Home.home_page') }}">
+                                <i class="bi bi-headset me-2"></i> Abrir Chamado
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="{{ url_for('Cliente.cliente_page') }}">
+                                <i class="bi bi-chat-dots me-2"></i> Meus Chamados
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('Admin_chamados.admin_page') }}">
+                                <i class="bi bi-shield-lock me-2"></i> Página de administrador
+                            </a>
+                        </li>
+                    </ul>
+
+                    <hr class="mx-3 mt-4 mb-2 text-muted">
+
+                    <ul class="nav flex-column mb-0">
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="bi bi-box-arrow-right me-2"></i> Sair
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 main-content">
+                
+                <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-4 border-bottom">
+                    <h1 class="h2" style="color: var(--bs-pink-primary);">
+                        <i class="bi bi-file-earmark-text me-2"></i> Detalhes do Chamado #<span id="chamadoId">{{ chamado.id }}</span>
+                    </h1>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="window.history.back()">
+                        <i class="bi bi-arrow-left me-1"></i> Voltar à Lista
+                    </button>
+                </div>
+
+                <div class="row justify-content-center">
+                    <div class="col-lg-10 col-xl-8">
+                        <div class="card shadow-sm border-0">
+                            
+                            <div class="card-header card-header-chamado">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    {# CORREÇÃO: Usando nome_tipo (propriedade do modelo TipoChamado) #}
+                                    <h5 class="mb-0">{{ chamado.tipo.nome_tipo }}</h5> 
+                                    {# Usando nome_status para o status #}
+                                    <span class="badge status-badge status-{{ chamado.status_id }}">{{ chamado.status.nome_status|upper }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="card-body p-4">
+                                
+                                <h6 class="mb-3 text-uppercase text-muted">Informações do Solicitante</h6>
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-6">
+                                        <span class="detail-label">Nome Completo:</span>
+                                        <div class="detail-value">{{ chamado.nome_completo }}</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <span class="detail-label">Login/Usuário (Rede):</span>
+                                        <div class="detail-value">{{ chamado.user|default('N/A') }}</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <span class="detail-label">Setor:</span>
+                                        {# CORREÇÃO: Usando nome_setor (propriedade do modelo Setor) #}
+                                        <div class="detail-value">{{ chamado.setor.nome_setor|default('Setor Não Encontrado') }}</div> 
+                                    </div>
+                                    <div class="col-md-6">
+                                        <span class="detail-label">Data de Abertura:</span>
+                                        <div class="detail-value">{{ chamado.datetime.strftime('%d/%b/%Y %H:%M:%S') }}</div>
+                                    </div>
+                                </div>
+
+                                <h6 class="mb-3 mt-4 text-uppercase text-muted">Detalhes do Problema</h6>
+                                <div class="row g-3 mb-4">
+                                    
+                                    {% if chamado.plataforma_id %}
+                                    <div class="col-md-6">
+                                        <span class="detail-label">Plataforma (Recuperação de Senha):</span>
+                                        {# CORREÇÃO: Usando nome_plataforma (propriedade do modelo Plataforma) #}
+                                        <div class="detail-value">{{ chamado.plataforma.nome_plataforma|default('N/A') }}</div> 
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if chamado.cargo %}
+                                    <div class="col-md-6">
+                                        <span class="detail-label">Cargo (Novo Usuário):</span>
+                                        <div class="detail-value">{{ chamado.cargo }}</div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if chamado.cpf %}
+                                    <div class="col-md-6">
+                                        <span class="detail-label">CPF (Novo Usuário):</span>
+                                        <div class="detail-value">{{ chamado.cpf }}</div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if chamado.unidade_sei %}
+                                    <div class="col-md-6">
+                                        <span class="detail-label">Unidade SEI (Acesso):</span>
+                                        <div class="detail-value">{{ chamado.unidade_sei }}</div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="col-12">
+                                        <span class="detail-label">Descrição / Informações Adicionais:</span>
+                                        <div class="description-box mt-2">
+                                            {{ chamado.tipo_desc|default('Nenhuma descrição fornecida.') }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <h6 class="mb-3 mt-4 text-uppercase text-muted">Andamento do Atendimento</h6>
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-6">
+                                        <span class="detail-label">Técnico Responsável:</span>
+                                        {# NOVO: Exibe o nome do técnico se existir #}
+                                        <div class="detail-value">
+                                            {% if chamado.tecnico_responsavel %}
+                                                {{ chamado.tecnico_responsavel.nome|default(chamado.tecnico_responsavel.login) }}
+                                            {% else %}
+                                                Aguardando Atendimento
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    {# NOVO: Data/Hora do Atendimento #}
+                                    <div class="col-md-6">
+                                        <span class="detail-label">Início do Atendimento:</span>
+                                        <div class="detail-value">
+                                            {% if chamado.datetime_atendido %}
+                                                {{ chamado.datetime_atendido.strftime('%d/%b/%Y %H:%M:%S') }}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    {# NOVO: Data/Hora da Conclusão #}
+                                    <div class="col-md-6">
+                                        <span class="detail-label">Data de Conclusão:</span>
+                                        <div class="detail-value">
+                                            {% if chamado.datetime_concluido %}
+                                                {{ chamado.datetime_concluido.strftime('%d/%b/%Y %H:%M:%S') }}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    {# ÚLTIMA ATUALIZAÇÃO E COMENTÁRIOS FORAM MANTIDOS, MAS DEPENDEM DO MODELO DE HISTÓRICO #}
+                                    <div class="col-md-6">
+                                        <span class="detail-label">Última Atualização:</span>
+                                        <div class="detail-value">{{ chamado.ultima_atualizacao|default('N/A') }}</div>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <span class="detail-label">Comentários do Técnico:</span>
+                                        <div class="description-box mt-2">
+                                            {{ chamado.comentarios_tecnico|default('Nenhum comentário ainda.') }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-center mt-5">
+                                    {% if chamado.status_id == 1 %}
+                                    <button class="btn btn-lg btn-danger" id="btnCancelarChamado">
+                                        <i class="bi bi-x-circle me-1"></i> Cancelar Chamado
+                                    </button>
+                                    {% endif %}
+                                    
+                                    <p class="text-muted mt-3">**Ações e campos de andamento dinâmicos requerem modelos de `Histórico` e lógicas de permissão (usuário/admin) no Backend.**</p>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>
