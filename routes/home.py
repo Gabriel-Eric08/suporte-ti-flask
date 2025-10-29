@@ -4,6 +4,7 @@ from models.models import Setor,Usuario
 from db_config import db
 from sqlalchemy.exc import SQLAlchemyError
 from utils.validate_auth import check_auth_status
+from utils.getUsername import getUsername
 
 home_route=Blueprint('Home',__name__)
 
@@ -13,7 +14,11 @@ def home_page():
     if validate_status == False:
         return render_template('auth_error.html')
     
-    return render_template('home.html')
+    username= getUsername()
+    usuario = Usuario.query.filter_by(login=username).first()
+    nome = usuario.nome
+
+    return render_template('home.html', nome=nome)
 
 @home_route.route('/test-db')
 def test_db():

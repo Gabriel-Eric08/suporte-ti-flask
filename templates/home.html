@@ -4,11 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SECRETARIA DA MULHER - Sistema de Chamados</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" xintegrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
     <style>
-        /* ... Estilos CSS anteriores ... */
         :root {
             --bs-pink-primary: #d81b60;
             --bs-pink-hover: #ff69b4;
@@ -28,6 +27,12 @@
         .hero-subtitle { color: var(--bs-text-muted); font-style: italic; }
         .btn-primary { background-color: var(--bs-pink-primary) !important; border-color: var(--bs-pink-primary) !important; }
         .btn-primary:hover { background-color: var(--bs-pink-hover) !important; border-color: var(--bs-pink-hover) !important; }
+        /* Estilo para campo readonly */
+        .form-control[readonly] {
+            background-color: var(--bs-bg-light); 
+            opacity: 0.8;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -102,7 +107,8 @@
                                     <div class="row g-3 mb-3">
                                         <div class="col-md-6">
                                             <label for="nomeSolicitante" class="form-label">Nome Completo do Solicitante</label>
-                                            <input type="text" class="form-control" id="nomeSolicitante" required>
+                                            <!-- Campo VISUAL (somente leitura) preenchido com o nome completo, mas o valor real enviado será o USERNAME do cookie -->
+                                            <input type="text" class="form-control" id="nomeSolicitante" value="{{ nome }}" readonly required>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="setorSolicitante" class="form-label">Setor / Unidade do Solicitante</label>
@@ -153,12 +159,13 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const tipoProblemaSelect = document.getElementById('tipoProblema');
             const setorSolicitanteSelect = document.getElementById('setorSolicitante'); 
+            const nomeSolicitanteInput = document.getElementById('nomeSolicitante');
             const camposVariaveisDiv = document.getElementById('camposVariaveis');
             const campoDescricaoGeralDiv = document.getElementById('campoDescricaoGeral');
             const formChamado = document.getElementById('formChamado');
@@ -178,7 +185,7 @@
                 'Gabinete Executivo/Jurídico': 9,
                 'Ouvidoria/Gerência Geral ADM': 10,
                 'Protocolo': 11
-            };          
+            };          
 
             const plataformaMap = {
                 'Computador': 1,
@@ -281,7 +288,7 @@
             });
 
             // ====================================================================
-            // 2. FUNÇÃO DE SUBMISSÃO (Onde a chave 'desc' é gerada para o JSON)
+            // 2. FUNÇÃO DE SUBMISSÃO (Onde nome_completo E user são enviados)
             // ====================================================================
 
             formChamado.addEventListener('submit', async function(event) {
@@ -301,10 +308,26 @@
                     Swal.fire('Erro de Setor!', 'O Setor selecionado não foi reconhecido. Verifique e tente novamente.', 'error');
                     return;
                 }
+                
+                // --- Lógica para obter o valor do COOKIE 'username' ---
+                const usernameCookie = document.cookie.split('; ').find(row => row.startsWith('username='));
+                
+                let userLogin;
+                if(usernameCookie) {
+                    // Valor do cookie (o login, ex: juliana.silva)
+                    userLogin = usernameCookie.split('=')[1]; 
+                } else {
+                    // Fallback: se o cookie falhar, usa o nome completo que está no input readonly (MENOS IDEAL)
+                    userLogin = nomeSolicitanteInput.value; 
+                    console.warn("Cookie 'username' não encontrado. Enviando o valor do input 'nomeSolicitante' como login.");
+                }
+                // -----------------------------------------------------------
 
-                // Monta o objeto base do JSON
+                // Monta o objeto base do JSON.
                 const payload = {
-                    nome_completo: document.getElementById('nomeSolicitante').value,
+                    // Ambos os campos recebem o valor do cookie ('juliana.silva')
+                    nome_completo: userLogin, 
+                    user: userLogin, 
                     setor_id: setorId,
                     tipo_id: parseInt(tipo),
                     // O campo aqui se chama 'desc', que é o que o PY espera
@@ -314,48 +337,22 @@
                     cargo: null, 
                     unidade_sei: null 
                 };
-                
-                // Pega o login do usuário dos cookies (se existir)
-                const usernameCookie = document.cookie.split('; ').find(row => row.startsWith('username='));
-                if(usernameCookie) {
-                    payload.user = usernameCookie.split('=')[1];
-                } else {
-                    payload.user = payload.nome_completo; 
-                }
-
 
                 // --- Campos Condicionais ---
-
                 if (tipo === '5') {
                     const plataformaNome = document.getElementById('plataformaInput').value;
                     payload.plataforma_id = plataformaMap[plataformaNome] || null;
-
-                    if (!payload.plataforma_id) {
-                         Swal.fire('Erro!', 'Selecione a plataforma para a recuperação de senha.', 'error');
-                         return;
-                    }
-                } 
-                
-                else if (tipo === '6') {
-                    // CAPTURA DOS NOVOS INPUTS DE TEXTO
+                    if (!payload.plataforma_id) { Swal.fire('Erro!', 'Selecione a plataforma para a recuperação de senha.', 'error'); return; }
+                } else if (tipo === '6') {
                     const cargoTexto = document.getElementById('cargoInput').value.trim();
                     const unidadeTexto = document.getElementById('unidadeSeiInput').value.trim();
                     const acessos = document.getElementById('acessosAdicionais').value;
-
                     payload.cpf = document.getElementById('cpfInput').value.trim();
                     payload.cargo = cargoTexto; 
                     payload.unidade_sei = unidadeTexto; 
-                    
-                    // Adiciona acessos adicionais à descrição (se houver)
                     let descBase = payload.desc ? payload.desc + "\n" : "";
-                    if (acessos.trim()) {
-                        payload.desc = descBase + "ACESSOS ADICIONAIS: " + acessos;
-                    }
-
-                    if (!payload.cpf || !payload.cargo || !payload.unidade_sei) {
-                         Swal.fire('Erro!', 'Preencha todos os dados de novo login (CPF, Cargo e Unidade SEI).', 'error');
-                         return;
-                    }
+                    if (acessos.trim()) { payload.desc = descBase + "ACESSOS ADICIONAIS: " + acessos; }
+                    if (!payload.cpf || !payload.cargo || !payload.unidade_sei) { Swal.fire('Erro!', 'Preencha todos os dados de novo login (CPF, Cargo e Unidade SEI).', 'error'); return; }
                 }
                 
                 // Limpeza final do payload (remove chaves com valor null/vazio antes de enviar)
@@ -365,9 +362,11 @@
                     }
                 });
 
+                // ** LOG DE DEBUG (CONFIRMA O PAYLOAD ENVIADO) **
+                console.log("PAYLOAD ENVIADO PARA O FLASK:", JSON.stringify(payload, null, 2));
+
 
                 // --- Envio da Requisição ---
-                
                 const apiUrl = '/chamados/'; 
 
                 try {
