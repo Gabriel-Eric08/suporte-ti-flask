@@ -180,30 +180,24 @@ def concluir_chamado(id_chamado):
 # --------------------------------------------------------
 @admin_chamado_route.route('/<int:id_chamado>/recusar', methods=['PUT'])
 def recusar_chamado(id_chamado):
-    # --- VERIFICAÇÃO DE ACESSO E TÉCNICO ---
-    tecnico = verificar_admin_ou_funcionario()
-    if tecnico is None:
-        return jsonify({"mensagem": "Acesso negado. Necessário ser Administrador ou Funcionário."}), 403
-    # -------------------------------------
-    
     chamado = Chamado.query.filter_by(id=id_chamado).one_or_none()
 
     if chamado is None:
         return jsonify({"mensagem": f"Chamado com ID {id_chamado} não encontrado."}), 404
 
     # Apenas recusamos se não estiver já concluído ou recusado.
+    # Assumindo que 3 é "Concluído" e 4 é "Recusado/Cancelado"
     if chamado.status_id not in [3, 4]: 
         # Assumindo que o ID 4 é "Recusado/Cancelado"
         chamado.status_id = 4 
-        # REGISTRA O TÉCNICO QUE RECUSOU (pode ser útil)
-        if chamado.tecnico_responsavel_id is None:
-            chamado.tecnico_responsavel_id = tecnico.id 
     else:
         return jsonify({"mensagem": f"Chamado {id_chamado} já está concluído ou recusado."}), 400
 
 
     try:
         db.session.commit()
+        # Se 'chamado.status' não existir (por exemplo, se o relacionamento não carregar), 
+        # cai no fallback 'Recusado/Cancelado'.
         return jsonify({
             "mensagem": f"Chamado {id_chamado} recusado com sucesso.",
             "novo_status": chamado.status.nome_status if chamado.status else 'Recusado/Cancelado'
