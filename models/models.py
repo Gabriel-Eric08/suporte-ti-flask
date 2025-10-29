@@ -66,7 +66,7 @@ class Usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     login = db.Column(db.String(50), unique=True, nullable=False)
     senha = db.Column(db.String(255), nullable=False) # Armazena o hash da senha
-    nome = db.Column(db.String(255), nullable=False)
+    nome = db.Column(db.String(255), nullable=False) # Mantido para nome completo do usuário
     
     # Chaves Estrangeiras
     setor_id = db.Column(db.Integer, db.ForeignKey('setores.setor_id'), nullable=False)
@@ -84,7 +84,7 @@ class StatusChamado(db.Model):
         return f"StatusChamado('{self.status_id}', '{self.nome_status}')"
 
 # ------------------------------------------------
-# Classe Chamado
+# Classe Chamado - MODIFICADA
 # ------------------------------------------------
 
 class Chamado(db.Model):
@@ -95,16 +95,15 @@ class Chamado(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     
     # 1. Data de Abertura (Original)
-    # CORRIGIDO: Usa o fuso horário de Brasília (FUSO_BRASILIA) no default
     datetime = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(FUSO_BRASILIA))
     
     # 2. NOVAS COLUNAS DE TEMPO DE ACOMPANHAMENTO
     datetime_atendido = db.Column(db.DateTime, nullable=True) # Quando o status_id muda para 2
     datetime_concluido = db.Column(db.DateTime, nullable=True) # Quando o status_id muda para 3
     
-    # Informações do Solicitante
-    user = db.Column(db.String(255))
-    nome_completo = db.Column(db.String(255), nullable=False)
+    # Informações do Solicitante - MODIFICADO
+    # user e nome_completo removidos
+    user_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False) # Novo: Referência ao solicitante
     cpf = db.Column(db.String(14))
     tipo_desc = db.Column(db.Text, nullable=True) 
 
@@ -127,8 +126,14 @@ class Chamado(db.Model):
     status = db.relationship('StatusChamado', backref='chamados_status_rel', lazy=True)
     plataforma = db.relationship('Plataforma', backref='chamados_plataforma_rel', lazy=True)
     
-    # RELACIONAMENTO PARA O TÉCNICO RESPONSÁVEL
+    # RELACIONAMENTO PARA O SOLICITANTE (NOVO)
+    solicitante = db.relationship('Usuario', foreign_keys=[user_id], backref='chamados_solicitados', lazy=True)
+    
+    # RELACIONAMENTO PARA O TÉCNICO RESPONSÁVEL (AJUSTADO O foreign_keys)
     tecnico_responsavel = db.relationship('Usuario', foreign_keys=[tecnico_responsavel_id], backref='chamados_atendidos', lazy=True)
     
     def __repr__(self):
-        return f"Chamado(ID: {self.id}, Solicitante: {self.nome_completo}, Status: {self.status.nome_status if self.status else 'N/A'})"
+        # Alterado para usar o relacionamento solicitante
+        solicitante_nome = self.solicitante.nome if self.solicitante else 'ID N/A'
+        status_nome = self.status.nome_status if self.status else 'N/A'
+        return f"Chamado(ID: {self.id}, Solicitante: {solicitante_nome}, Status: {status_nome})"

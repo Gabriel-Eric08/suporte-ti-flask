@@ -1,5 +1,5 @@
 from flask import Flask, Blueprint, request, jsonify, render_template, abort
-from models.models import Chamado, TipoChamado, Setor, Plataforma 
+from models.models import Chamado, TipoChamado, Setor, Plataforma , Usuario
 from datetime import datetime
 from db_config import db
 from sqlalchemy import and_
@@ -36,13 +36,14 @@ def enviar_chamado():
     
     # --- 1. Inicialização de Variáveis e Extração de Dados ---
     
+    # Campo usado para BUSCAR o ID do Solicitante na tabela Usuario
+    nome_solicitante = data.get('nome_completo') # Mantendo o nome da variável de entrada
+    
     # Campos base obrigatórios
-    nome_completo = data.get('nome_completo')
     setor_id = data.get('setor_id')
     tipo_id = data.get('tipo_id')
     
     # Campos opcionais ou condicionais
-    # A variável Python ainda pode se chamar 'desc', mas o atributo do modelo é 'tipo_desc'
     desc = data.get('desc') 
     cpf = data.get('cpf')
     plataforma_id = data.get('plataforma_id')
@@ -51,17 +52,32 @@ def enviar_chamado():
     cargo = data.get('cargo')
     unidade_sei = data.get('unidade_sei')
     
-    user_login = data.get('user')
+    # user_login (user) foi removido, pois o login é feito pela busca
     
-    # --- 2. Validação de Campos Base ---
+    # --- 2. Validação de Campos Base e Busca do Usuário ---
     
-    if not nome_completo or not setor_id or not tipo_id:
+    if not nome_solicitante or not setor_id or not tipo_id:
         return jsonify({
             "success": False,
             "message": "Requisição necessita dos campos: nome_completo, setor_id e tipo_id."
         }), 400
     
+    # >> MODIFICAÇÃO CHAVE: Busca o ID do Usuário pelo Nome
+    usuario = Usuario.query.filter_by(nome=nome_solicitante).first()
+    
+    if not usuario:
+        # Falha se não encontrar um usuário com o nome fornecido
+        return jsonify({
+            "success": False,
+            "message": f"Usuário solicitante '{nome_solicitante}' não encontrado na base de dados."
+        }), 404
+        
+    # Salva o ID do solicitante para uso no novo chamado
+    solicitante_user_id = usuario.id 
+    
     # --- 3. Validação de Campos Condicionais (Tipo de Chamado) ---
+    
+    # ... (O restante das validações condicionais do seu código permanece o mesmo) ...
     
     # Tipo 5: Recuperação de Senha de Acesso (Requer plataforma)
     if tipo_id == 5:
@@ -93,15 +109,18 @@ def enviar_chamado():
     # --- 5. Criação e Inserção do Novo Chamado ---
     
     novo_chamado = Chamado(
+        # CHAVE ESTRANGEIRA DO SOLICITANTE (NOVA COLUNA)
+        user_id=solicitante_user_id, # <--- NOVO
+        
         # Campos obrigatórios
-        nome_completo=nome_completo,
+        # nome_completo FOI REMOVIDO DO MODELO
         setor_id=setor_id,
         tipo_id=tipo_id,
         status_id=1, # Configura o status inicial como ENVIADO (1)
         
         # Campos de dados
-        user=user_login,
-        tipo_desc=desc, # <--- CORRIGIDO: Passando 'desc' para o campo 'tipo_desc' do modelo
+        # user FOI REMOVIDO DO MODELO
+        tipo_desc=desc, 
         cpf=cpf,
         
         # Chaves Estrangeiras opcionais/condicionais
@@ -110,14 +129,12 @@ def enviar_chamado():
         # NOVOS CAMPOS TEXTO
         cargo=cargo,
         unidade_sei=unidade_sei,
-        
     )
     
     try:
         db.session.add(novo_chamado)
         db.session.commit()
         
-        # O ID é gerado após o commit para o objeto 'novo_chamado'
         novo_chamado_id = novo_chamado.id
         
         # 6. CÁLCULO E RETORNO DA POSIÇÃO NA FILA
@@ -127,13 +144,12 @@ def enviar_chamado():
             "success": True,
             "message": "Chamado registrado com sucesso!",
             "id": novo_chamado_id,
-            "posicao_na_fila": posicao # <-- CHAVE EXPORTADA PARA O JS
-        }), 201 # 201 Created
+            "posicao_na_fila": posicao
+        }), 201
         
     except Exception as e:
         db.session.rollback()
         print(f"Erro ao salvar chamado: {e}")
-        # Se ocorrer um erro aqui, é um erro de banco de dados (500)
         return jsonify({
             "success": False,
             "message": "Erro interno ao salvar chamado no banco de dados."
