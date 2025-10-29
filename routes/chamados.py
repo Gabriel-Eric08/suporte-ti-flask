@@ -1,8 +1,9 @@
-from flask import Flask, Blueprint, request, jsonify, render_template
+from flask import Flask, Blueprint, request, jsonify, render_template, abort
 from models.models import Chamado, TipoChamado, Setor, Plataforma 
 from datetime import datetime
 from db_config import db
 from sqlalchemy import and_
+from utils.posicaoChamado import posicaoChamado
 
 chamados_route = Blueprint('Chamados', __name__)
 
@@ -161,14 +162,30 @@ def posicao_fila():
             "message": "Erro interno ao consultar o banco de dados."
         }), 500
     
-@chamados_route.route('/<id_chamado>')
+@chamados_route.route('/<int:id_chamado>')
 def detalhes_chamado(id_chamado):
-    # CORREÇÃO: Usar .first() para obter um único objeto, não uma Query.
-    chamado = Chamado.query.filter_by(id=id_chamado).first() 
     
-
+    # 1. Busca o chamado principal
+    chamado = Chamado.query.filter_by(id=id_chamado).first()
+    
+    # Tratamento de Chamado Não Encontrado
     if chamado is None:
-        # Tratar caso o chamado não exista (exemplo: abort(404))
-        pass 
-        
-    return render_template('detalhes_chamado.html', chamado=chamado)
+        # Retorna 404
+        return abort(404, description=f"Chamado com ID {id_chamado} não encontrado.") 
+
+    # 2. Chama a função auxiliar, que agora retorna (dicionário, status_code)
+    # Ignoramos o status_code (pode ser usado para log) e pegamos apenas o dicionário
+    dados_posicao, _ = posicaoChamado(id_chamado)
+    
+    # 3. Extrai a posição do dicionário (AGORA FUNCIONA!)
+    posicao = dados_posicao.get("posicao")
+    
+    # 4. Formata a variável 'posicao' para o template: "" se não tiver posição
+    posicao_formatada = str(posicao) if posicao is not None else ""
+    
+    # 5. Renderiza o template
+    return render_template(
+        'detalhes_chamado.html', 
+        chamado=chamado,
+        posicao=posicao_formatada # Variável passada para o Jinja2
+    )

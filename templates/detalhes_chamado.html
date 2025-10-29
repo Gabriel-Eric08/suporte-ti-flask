@@ -107,6 +107,17 @@
                                 </div>
                             </div>
                             
+                            {# NOVO BLOCO: Exibe a posição na fila (somente se a variável 'posicao' não estiver vazia) #}
+                            {% if posicao %}
+                            <div class="card-body p-3 border-bottom" style="background-color: #fff0f5;">
+                                <div class="alert alert-info mb-0 py-2 text-center" role="alert">
+                                    <i class="bi bi-list-ol me-2"></i> 
+                                    Seu chamado está na **posição {{ posicao }}** da fila de atendimento.
+                                    <i class="bi bi-clock"></i>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
                             <div class="card-body p-4">
                                 
                                 <h6 class="mb-3 text-uppercase text-muted">Informações do Solicitante</h6>

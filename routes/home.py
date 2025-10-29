@@ -13,8 +13,6 @@ def home_page():
     if validate_status == False:
         return render_template('auth_error.html')
     
-    usuario = Usuario.query.filter_by(login='admin').first()
-    print(usuario)
     return render_template('home.html')
 
 @home_route.route('/test-db')
