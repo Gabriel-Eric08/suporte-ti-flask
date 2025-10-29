@@ -176,6 +176,7 @@ def detalhes_chamado(id_chamado):
     # CORREÇÃO: Usar .first() para obter um único objeto, não uma Query.
     chamado = Chamado.query.filter_by(id=id_chamado).first() 
     
+
     if chamado is None:
         # Tratar caso o chamado não exista (exemplo: abort(404))
         pass 
