@@ -1,16 +1,10 @@
 from flask import Flask, Blueprint, request, jsonify, render_template
-# Importe apenas os modelos necessários para as FKs restantes
-# Certifique-se de que Setor, TipoChamado, Plataforma e Chamado estão importados do seu models.py
 from models.models import Chamado, TipoChamado, Setor, Plataforma 
 from datetime import datetime
 from db_config import db
-from sqlalchemy import and_ # Adicionado para a lógica de cálculo de posição
+from sqlalchemy import and_
 
 chamados_route = Blueprint('Chamados', __name__)
-
-# ======================================================================
-# FUNÇÃO DE CÁLCULO DE POSIÇÃO (Lógica do Negócio)
-# ======================================================================
 
 def calcular_posicao_na_fila(novo_chamado_id):
     """
@@ -28,10 +22,6 @@ def calcular_posicao_na_fila(novo_chamado_id):
     
     # Sua posição na fila é a quantidade de pessoas na sua frente + 1
     return contagem_antes + 1
-
-# ======================================================================
-# ROTA DE ENVIO DE CHAMADO (POST) - CORRIGIDO 'desc' PARA 'tipo_desc'
-# ======================================================================
 
 @chamados_route.route('/', methods=['POST'])
 def enviar_chamado():
