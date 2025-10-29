@@ -155,8 +155,11 @@
                                 <button type="submit" class="btn btn-primary me-2">
                                     <i class="bi bi-search me-2"></i> Filtrar Chamados
                                 </button>
-                                <button type="button" class="btn btn-secondary" id="btnLimparFiltros">
+                                <button type="button" class="btn btn-secondary me-2" id="btnLimparFiltros">
                                     <i class="bi bi-x-circle me-2"></i> Limpar Filtros
+                                </button>
+                                <button type="button" class="btn btn-info text-white" id="btnImprimirRelatorio">
+                                    <i class="bi bi-printer-fill me-2"></i> Imprimir Relatório
                                 </button>
                             </div>
                         </form>
@@ -171,7 +174,7 @@
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-hover table-sm mb-0">
+                            <table class="table table-hover table-sm mb-0" id="tabelaChamados">
                                 <thead class="table-header-pink">
                                     <tr>
                                         <th>ID</th>
@@ -283,179 +286,241 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <script>
         // ====================================================================
-        // VARIÁVEIS DE URL (CONFIGURADAS PELO JINJA2)
+        // SEÇÕES ANTERIORES (SEM ALTERAÇÃO)
+        // ... todo o código de rotas, ajax, modal e filtros permanece o mesmo ...
         // ====================================================================
-        // NOTE: Estas rotas dependem de como você as definiu no seu código Python
         const ROTA_BASE_DETALHES = "{{ url_for('Chamados.detalhes_chamado', id_chamado=0)|safe }}"; 
         const ROTA_BASE_ATENDER = "{{ url_for('Admin_chamados.atender_chamado', id_chamado=0)|safe }}";
         const ROTA_BASE_CONCLUIR = "{{ url_for('Admin_chamados.concluir_chamado', id_chamado=0)|safe }}";
         const ROTA_BASE_RECUSAR = "{{ url_for('Admin_chamados.recusar_chamado', id_chamado=0)|safe }}"; 
         const ROTA_ATUAL_ADMIN = "{{ url_for('Admin_chamados.admin_page') }}";
         
-        // Função para remover o ID dummy (0) da URL base e adicionar o ID real
         function construirRota(rotaBase, chamadoId) {
-            // Substitui o ID dummy (0) pelo ID real
             return rotaBase.replace('/0', '/' + chamadoId); 
         }
-
-        // ====================================================================
-        // FUNÇÕES DE AÇÃO AJAX (fetch) - MANTIDAS
-        // ====================================================================
 
         async function atualizarStatusChamado(chamadoId, rotaUrl, acaoNome) {
             const modalAcoes = document.getElementById('modalAcoes');
             const modalInstance = bootstrap.Modal.getInstance(modalAcoes);
-            modalInstance.hide(); 
+            if (modalInstance) modalInstance.hide(); 
 
             const loadingAlert = Swal.fire({
                 title: 'Processando...',
                 text: `Atualizando chamado #${chamadoId} para '${acaoNome}'...`,
-                icon: 'info',
-                showConfirmButton: false,
-                allowOutsideClick: false
+                icon: 'info', showConfirmButton: false, allowOutsideClick: false
             });
 
             try {
                 const response = await fetch(rotaUrl, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                 });
-
                 const data = await response.json();
-
+                loadingAlert.close();
                 if (response.ok) {
-                    loadingAlert.close();
                     Swal.fire({
                         title: 'Sucesso!',
                         text: data.mensagem || `Chamado #${chamadoId} marcado como '${acaoNome}'.`,
-                        icon: 'success',
-                        confirmButtonColor: '#198754'
-                    }).then(() => {
-                        // Recarrega a página para refletir o novo status
-                        window.location.reload(); 
-                    });
+                        icon: 'success', confirmButtonColor: '#198754'
+                    }).then(() => { window.location.reload(); });
                 } else {
-                    loadingAlert.close();
                     Swal.fire({
                         title: 'Erro!',
                         text: data.mensagem || `Falha ao atualizar o status do chamado #${chamadoId}.`,
-                        icon: 'error',
-                        confirmButtonColor: '#dc3545'
+                        icon: 'error', confirmButtonColor: '#dc3545'
                     });
                 }
-
             } catch (error) {
                 loadingAlert.close();
                 console.error('Erro de rede ou API:', error);
                 Swal.fire({
                     title: 'Erro de Conexão',
                     text: 'Não foi possível se comunicar com o servidor.',
-                    icon: 'error',
-                    confirmButtonColor: '#dc3545'
+                    icon: 'error', confirmButtonColor: '#dc3545'
                 });
             }
         }
 
-        // ====================================================================
-        // LÓGICA DO MODAL E BOTÕES DE AÇÃO (MANTIDA)
-        // ====================================================================
-
         const modalAcoes = document.getElementById('modalAcoes');
-        const btnVerDetalhes = document.getElementById('btnVerDetalhes');
-        const btnAtender = document.getElementById('btnAtender');
-        const btnConcluir = document.getElementById('btnConcluir');
-        const btnRecusar = document.getElementById('btnRecusar');
-
-        modalAcoes.addEventListener('show.bs.modal', event => {
-            const button = event.relatedTarget;
-            const chamadoId = button.getAttribute('data-chamado-id');
-            const modalTitle = modalAcoes.querySelector('#chamadoIdDisplay');
-            modalTitle.textContent = chamadoId;
-        });
-        
-        btnVerDetalhes.addEventListener('click', function() {
-            const chamadoId = modalAcoes.querySelector('#chamadoIdDisplay').textContent;
-            const rotaCompleta = construirRota(ROTA_BASE_DETALHES, chamadoId);
-            
-            const modalInstance = bootstrap.Modal.getInstance(modalAcoes);
-            modalInstance.hide();
-            window.location.href = rotaCompleta;
-        });
-        
-        btnAtender.addEventListener('click', function() {
-            const chamadoId = modalAcoes.querySelector('#chamadoIdDisplay').textContent;
-            const rotaCompleta = construirRota(ROTA_BASE_ATENDER, chamadoId); 
-            atualizarStatusChamado(chamadoId, rotaCompleta, 'Em Atendimento');
-        });
-
-        btnConcluir.addEventListener('click', function() {
-            const chamadoId = modalAcoes.querySelector('#chamadoIdDisplay').textContent;
-            
-            Swal.fire({
-                title: "Concluir Chamado",
-                text: `Deseja realmente marcar o Chamado #${chamadoId} como Concluído?`,
-                icon: "question",
-                showCancelButton: true,
-                confirmButtonColor: "#198754", 
-                cancelButtonColor: "#6c757d",
-                confirmButtonText: "Sim, Concluir!"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const rotaCompleta = construirRota(ROTA_BASE_CONCLUIR, chamadoId);
-                    atualizarStatusChamado(chamadoId, rotaCompleta, 'Concluído');
-                }
+        if (modalAcoes) {
+            modalAcoes.addEventListener('show.bs.modal', event => {
+                const button = event.relatedTarget;
+                const chamadoId = button.getAttribute('data-chamado-id');
+                modalAcoes.querySelector('#chamadoIdDisplay').textContent = chamadoId;
             });
-        });
-
-        btnRecusar.addEventListener('click', function() {
-            const chamadoId = modalAcoes.querySelector('#chamadoIdDisplay').textContent;
-            Swal.fire({
-                title: "Recusar Chamado",
-                text: `Deseja realmente Recusar (Cancelar) o Chamado #${chamadoId}?`,
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonColor: "#dc3545", 
-                cancelButtonColor: "#6c757d",
-                confirmButtonText: "Sim, Recusar!"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const rotaCompleta = construirRota(ROTA_BASE_RECUSAR, chamadoId);
-                    atualizarStatusChamado(chamadoId, rotaCompleta, 'Recusado/Cancelado');
-                }
+            
+            document.getElementById('btnVerDetalhes').addEventListener('click', function() {
+                const chamadoId = modalAcoes.querySelector('#chamadoIdDisplay').textContent;
+                window.location.href = construirRota(ROTA_BASE_DETALHES, chamadoId);
             });
-        });
+            
+            document.getElementById('btnAtender').addEventListener('click', function() {
+                const chamadoId = modalAcoes.querySelector('#chamadoIdDisplay').textContent;
+                atualizarStatusChamado(chamadoId, construirRota(ROTA_BASE_ATENDER, chamadoId), 'Em Atendimento');
+            });
 
+            document.getElementById('btnConcluir').addEventListener('click', function() {
+                const chamadoId = modalAcoes.querySelector('#chamadoIdDisplay').textContent;
+                Swal.fire({
+                    title: "Concluir Chamado", text: `Deseja realmente marcar o Chamado #${chamadoId} como Concluído?`,
+                    icon: "question", showCancelButton: true, confirmButtonColor: "#198754", 
+                    cancelButtonColor: "#6c757d", confirmButtonText: "Sim, Concluir!"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        atualizarStatusChamado(chamadoId, construirRota(ROTA_BASE_CONCLUIR, chamadoId), 'Concluído');
+                    }
+                });
+            });
 
-        // ====================================================================
-        // LÓGICA DE FILTRO (MANTIDA)
-        // ====================================================================
+            document.getElementById('btnRecusar').addEventListener('click', function() {
+                const chamadoId = modalAcoes.querySelector('#chamadoIdDisplay').textContent;
+                Swal.fire({
+                    title: "Recusar Chamado", text: `Deseja realmente Recusar (Cancelar) o Chamado #${chamadoId}?`,
+                    icon: "warning", showCancelButton: true, confirmButtonColor: "#dc3545", 
+                    cancelButtonColor: "#6c757d", confirmButtonText: "Sim, Recusar!"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        atualizarStatusChamado(chamadoId, construirRota(ROTA_BASE_RECUSAR, chamadoId), 'Recusado/Cancelado');
+                    }
+                });
+            });
+        }
+
         document.getElementById('formFiltro').addEventListener('submit', function(event) {
             event.preventDefault();
-            
-            const form = event.target;
-            const formData = new FormData(form);
-            const searchParams = new URLSearchParams();
-
-            for (const [key, value] of formData.entries()) {
-                if (value) {
-                    searchParams.append(key, value);
-                }
-            }
-
-            const queryString = searchParams.toString();
-            
-            window.location.href = ROTA_ATUAL_ADMIN + (queryString ? '?' + queryString : '');
+            const searchParams = new URLSearchParams(new FormData(event.target));
+            window.location.href = ROTA_ATUAL_ADMIN + '?' + searchParams.toString();
         });
         
         document.getElementById('btnLimparFiltros').addEventListener('click', function() {
             window.location.href = ROTA_ATUAL_ADMIN;
         });
 
+        // ====================================================================
+        // LÓGICA PARA GERAR RELATÓRIO PDF - CORRIGIDA
+        // ====================================================================
+        document.getElementById('btnImprimirRelatorio').addEventListener('click', function() {
+            
+            const rows = document.querySelectorAll("#tabelaChamados tbody tr");
+            if (rows.length === 1 && rows[0].querySelector('td[colspan="7"]')) {
+                Swal.fire('Atenção', 'Não há chamados para gerar um relatório.', 'warning');
+                return;
+            }
+            
+            const dataInicialInput = document.getElementById('dataInicial').value;
+            const dataFinalInput = document.getElementById('dataFinal').value;
+            const atendenteSelect = document.getElementById('atendenteFiltro');
+            const statusSelect = document.getElementById('statusFiltro');
+            const tipoSelect = document.getElementById('tipoChamadoFiltro');
+
+            // ================== INÍCIO DA CORREÇÃO ==================
+            // Pega o VALOR do select de atendente para a lógica condicional
+            const selectedAtendenteValue = atendenteSelect.value;
+            // =================== FIM DA CORREÇÃO ====================
+
+            let periodoStr = "Todo o período";
+            if (dataInicialInput) {
+                periodoStr = `De ${new Date(dataInicialInput+'T00:00:00').toLocaleDateString('pt-BR')}`;
+                if (dataFinalInput) {
+                    periodoStr += ` até ${new Date(dataFinalInput+'T00:00:00').toLocaleDateString('pt-BR')}`;
+                }
+            } else if (dataFinalInput) {
+                periodoStr = `Até ${new Date(dataFinalInput+'T00:00:00').toLocaleDateString('pt-BR')}`;
+            }
+
+            const atendenteStr = atendenteSelect.options[atendenteSelect.selectedIndex].text;
+            const statusStr = statusSelect.options[statusSelect.selectedIndex].text;
+            const tipoStr = tipoSelect.options[tipoSelect.selectedIndex].text;
+
+            let totalChamados = 0, pendentes = 0, concluidos = 0, cancelados = 0;
+            const atendenteStats = {};
+
+            rows.forEach(row => {
+                totalChamados++;
+                const atendenteNome = row.cells[3].textContent.trim();
+                const statusNome = row.cells[5].textContent.trim();
+
+                if (statusNome.includes('Aberto') || statusNome.includes('Atendimento')) pendentes++;
+                if (statusNome.includes('Concluído')) concluidos++;
+                if (statusNome.includes('Recusado') || statusNome.includes('Cancelado')) cancelados++;
+                
+                if (!atendenteStats[atendenteNome]) {
+                    atendenteStats[atendenteNome] = { atendidos: 0, concluidos: 0, cancelados: 0 };
+                }
+
+                atendenteStats[atendenteNome].atendidos++;
+                if (statusNome.includes('Concluído')) atendenteStats[atendenteNome].concluidos++;
+                if (statusNome.includes('Recusado') || statusNome.includes('Cancelado')) atendenteStats[atendenteNome].cancelados++;
+            });
+
+            // Começa a montar o HTML do relatório
+            let reportHtml = `
+                <div style="font-family: Arial, sans-serif; margin: 20px;">
+                    <h1 style="text-align: center; color: #d81b60; border-bottom: 2px solid #d81b60; padding-bottom: 10px;">
+                        Relatório de Chamados
+                    </h1>
+                    <div style="margin-top: 20px; font-size: 14px; line-height: 1.6;">
+                        <p><strong>Período:</strong> ${periodoStr}</p>
+                        <p><strong>Atendente:</strong> ${atendenteStr}</p>
+                        <p><strong>Status:</strong> ${statusStr}</p>
+                        <p><strong>Tipo de Chamado:</strong> ${tipoStr}</p>
+                    </div>
+                    
+                    <hr style="margin: 25px 0; border: 0; border-top: 1px solid #eee;">
+                    <h2 style="color: #333; font-size: 18px;">Resumo Geral</h2>
+                    <div style="font-size: 14px; margin-bottom: 25px; line-height: 1.6;">
+                        <p><strong>Total de Chamados na Lista:</strong> ${totalChamados}</p>
+                        <p><strong>Chamados Pendentes (Abertos + Em Atendimento):</strong> ${pendentes}</p>
+                        <p><strong>Chamados Concluídos:</strong> ${concluidos}</p>
+                        <p><strong>Chamados Cancelados/Recusados:</strong> ${cancelados}</p>
+                    </div>
+            `;
+
+            // ================== INÍCIO DA CORREÇÃO ==================
+            // A seção de desempenho só é adicionada se um atendente específico foi selecionado
+            // O valor "" corresponde à opção "Todos os Atendentes"
+            if (selectedAtendenteValue !== "") {
+                let desempenhoPorAtendenteHtml = `<h2 style="color: #333; font-size: 18px;">Desempenho por Atendente</h2>`;
+                
+                for (const nome in atendenteStats) {
+                    const stats = atendenteStats[nome];
+                    desempenhoPorAtendenteHtml += `
+                        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">
+                            <h3 style="font-size: 16px; color: #555; margin-bottom: 10px;">Atendente: ${nome}</h3>
+                            <p style="margin: 5px 0 5px 15px; font-size: 14px;"><strong>Chamados na Lista:</strong> ${stats.atendidos}</p>
+                            <p style="margin: 5px 0 5px 15px; font-size: 14px;"><strong>Concluídos:</strong> ${stats.concluidos}</p>
+                            <p style="margin: 5px 0 5px 15px; font-size: 14px;"><strong>Cancelados/Recusados:</strong> ${stats.cancelados}</p>
+                        </div>
+                    `;
+                }
+                reportHtml += desempenhoPorAtendenteHtml;
+            }
+            // =================== FIM DA CORREÇÃO ====================
+
+            // Fecha a div principal
+            reportHtml += `</div>`;
+
+            const element = document.createElement('div');
+            element.innerHTML = reportHtml;
+
+            const opt = {
+                margin:       1, filename: 'relatorio_chamados.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'cm', format: 'a4', orientation: 'portrait' }
+            };
+
+            Swal.fire({
+                title: 'Gerando Relatório', text: 'Por favor, aguarde enquanto o PDF é criado...',
+                icon: 'info', showConfirmButton: false, allowOutsideClick: false
+            });
+
+            html2pdf().from(element).set(opt).save().then(() => { Swal.close(); });
+        });
     </script>
 </body>
 </html>
