@@ -1,65 +1,61 @@
-# 🧰 Sistema de Suporte de TI
+# 💻 Sistema de Suporte de TI – Flask
 
-Aplicação web desenvolvida em **Flask** para gestão de chamados de suporte técnico em empresas.  
-Permite que usuários abram chamados, acompanhem seu andamento e que administradores gerenciem atendimentos de forma centralizada.
+Este é um sistema web de **suporte técnico interno**, desenvolvido com **Flask** e **MySQL**, que permite o **registro, acompanhamento e gestão de chamados técnicos** dentro de uma empresa.
 
 ---
 
 ## 🚀 Funcionalidades
 
 ### 👤 Usuário comum
-- Login com **usuário e senha**.  
-- Abertura de novos chamados:  
-  - Seleção de **setor** (para indicar onde está o problema).  
-  - Escolha do **tipo de problema**.  
-  - Campo de **descrição adicional** ou opção **“Outros”** para texto livre.  
-- Exibição da **posição na fila** após enviar o chamado.  
-- Acesso à aba **“Meus Chamados”**, com:  
-  - Lista de todos os chamados abertos pelo usuário.  
-  - Filtros de busca.  
-  - Opções para **visualizar detalhes** ou **cancelar** o chamado.  
-  - Detalhes incluem: funcionário que atendeu, horários de abertura, atendimento e conclusão.
+- Login com autenticação por **usuário e senha**.
+- Abertura de chamados informando:
+  - Setor onde ocorreu o problema.
+  - Tipo de problema (ou “Outros”, com descrição personalizada).
+  - Campo opcional para observações adicionais.
+- Exibição da **posição do chamado na fila** logo após o envio.
+- Acesso à aba **“Meus Chamados”**, onde é possível:
+  - Visualizar todos os chamados abertos.
+  - Aplicar filtros de busca.
+  - Ver detalhes (quem atendeu, horários de abertura, atendimento e conclusão).
+  - Cancelar chamados em andamento.
 
 ### 🛠️ Administrador
-- Acesso restrito à aba **“Administrador”**.  
-- Visualização de **todos os chamados** do sistema.  
-- Opções para **atender**, **cancelar** ou **concluir** chamados.  
-- Possibilidade de visualizar detalhes completos de cada chamado.  
+- Acesso restrito apenas a contas com permissão de **admin**.
+- Visualização de **todos os chamados do sistema**.
+- Ações disponíveis:
+  - Atender chamados.
+  - Concluir chamados.
+  - Cancelar chamados.
+- Acesso aos **detalhes completos** de cada chamado.
 
 ---
 
-## 🗄️ Estrutura de Dados
+## 🗂️ Estrutura do Projeto
 
-- Banco de dados: **MySQL**
-- ORM: **SQLAlchemy**
-- Principais tabelas:
-  - `usuarios` → login, senha, permissões (admin ou usuário comum)
-  - `chamados` → setor, tipo de problema, descrição, status, horários e responsável pelo atendimento
-
----
-
-## ⚙️ Tecnologias Utilizadas
-
-| Tecnologia | Descrição |
-|-------------|------------|
-| **Python 3** | Linguagem principal |
-| **Flask** | Framework web |
-| **SQLAlchemy** | ORM para integração com MySQL |
-| **MySQL** | Banco de dados |
-| **HTML / CSS / JS** | Interface web |
-
----
-
-## 🧩 Estrutura do Projeto
-
-```bash
-📦 suporte-ti
-├── app.py                # Ponto de entrada principal da aplicação Flask
-├── models.py             # Modelos SQLAlchemy
+```yaml
+suporte-ti-flask
+├── app.py
+├── db_config.py
+│
+├── models/
+│ └── models.py
+│
 ├── routes/
-│   ├── auth.py           # Rotas de autenticação
-│   ├── chamados.py       # Rotas de abertura e listagem de chamados
-│   └── admin.py          # Rotas da área administrativa
-├── templates/            # Páginas HTML com Jinja2
-├── static/               # CSS, JS e imagens
-└── requirements.txt      # Dependências do projeto
+│ ├── admin_chamados.py
+│ ├── auth.py
+│ ├── chamados.py
+│ └── client_page.py
+│
+├── utils/
+│ ├── getUsername.py
+│ ├── validate_auth.py
+│ └── getUsuario.py
+│
+└── templates/
+├── login_page.html
+├── home.html
+├── client_page.html
+├── detalhes_chamado.html
+├── admin_page.html
+├── admin_acesso_negado.html
+└── auth_error.html
