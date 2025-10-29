@@ -2,9 +2,10 @@ from flask import Blueprint, request, render_template, jsonify, redirect, url_fo
 from models.models import Chamado, TipoChamado, Usuario, StatusChamado 
 from db_config import db 
 from datetime import datetime
-# REMOVIDO: timezone, para usar pytz
-import pytz # <-- NOVO: Importa pytz para fusos horários
+from sqlalchemy.orm import joinedload
+import pytz
 from utils.getUsername import getUsername
+from sqlalchemy import or_
 
 admin_chamado_route = Blueprint('Admin_chamados', __name__)
 
@@ -44,16 +45,22 @@ def admin_page():
     data_final_str = request.args.get('data_final')
     status_id_str = request.args.get('status_id')
     tipo_id_str = request.args.get('tipo_id')
+    # NOVO PARÂMETRO: ID do Atendente (técnico)
+    atendente_id_str = request.args.get('atendente_id') 
 
-    # 2. Iniciar a consulta base
-    query = Chamado.query
+    # 2. Iniciar a consulta base e carregar os relacionamentos
+    query = Chamado.query.options(
+        joinedload(Chamado.solicitante),        
+        joinedload(Chamado.tecnico_responsavel), 
+        joinedload(Chamado.status),             
+        joinedload(Chamado.tipo),               
+    )
     
     # 3. Aplicar filtros dinamicamente
     # Filtro de Data Inicial 
     if data_inicial_str:
         try:
             data_inicial = datetime.strptime(data_inicial_str, '%Y-%m-%d')
-            # CORREÇÃO: Torna a data "aware" no fuso de Brasília, no início do dia
             data_inicial_aware = FUSO_BRASILIA.localize(data_inicial.replace(hour=0, minute=0, second=0))
             query = query.filter(Chamado.datetime >= data_inicial_aware)
         except ValueError:
@@ -63,9 +70,7 @@ def admin_page():
     if data_final_str:
         try:
             data_final_base = datetime.strptime(data_final_str, '%Y-%m-%d')
-            # Garante que pega até o final do dia
             data_final_limite = data_final_base.replace(hour=23, minute=59, second=59) 
-            # CORREÇÃO: Torna a data "aware" no fuso de Brasília, no final do dia
             data_final_aware = FUSO_BRASILIA.localize(data_final_limite)
             query = query.filter(Chamado.datetime <= data_final_aware)
         except ValueError:
@@ -80,18 +85,38 @@ def admin_page():
     if tipo_id_str and tipo_id_str.isdigit():
         tipo_id = int(tipo_id_str)
         query = query.filter(Chamado.tipo_id == tipo_id)
+        
+    # NOVO FILTRO: Atendente por ID
+    if atendente_id_str:
+        if atendente_id_str == 'NA':
+            # Filtra por chamados Não Atribuídos (tecnico_responsavel_id é NULL)
+            query = query.filter(Chamado.tecnico_responsavel_id == None)
+        elif atendente_id_str.isdigit():
+            # Filtra por um atendente específico
+            atendente_id = int(atendente_id_str)
+            query = query.filter(Chamado.tecnico_responsavel_id == atendente_id)
 
     # 4. Finalizar a ordenação e executar a consulta
     chamados = query.order_by(Chamado.datetime.desc()).all()
     
-    # 5. Consultar Tipos de Chamado para o filtro
+    # 5. Consultar Tipos de Chamado e a lista de Atendentes para o filtro
     tipos_chamado = TipoChamado.query.order_by(TipoChamado.nome_tipo).all()
+    
+    # CORREÇÃO: Usando 'or_' para garantir que a consulta SQL seja (cargo_id=1 OR cargo_id=2)
+    # Assumindo que você definiu CARGO_ADMIN e CARGO_TECNICO, senão use 1 e 2 diretamente
+    atendentes = Usuario.query.filter(
+        or_(
+            Usuario.cargo_id == 3, # Administrador
+            Usuario.cargo_id == 2  # Técnico/Funcionário
+        )
+    ).order_by(Usuario.nome).all()
 
     # 6. Renderizar o template original para usuários autorizados
     return render_template(
         'admin_page.html', 
         chamados=chamados,
         tipos=tipos_chamado,
+        atendentes=atendentes, # <-- PASSANDO A LISTA DE ATENDENTES
         request=request
     )
 

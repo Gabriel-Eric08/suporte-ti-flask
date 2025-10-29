@@ -1,7 +1,8 @@
-from flask import Blueprint, request, render_template
-from models.models import Chamado, TipoChamado
+from flask import Blueprint, request, render_template, abort
+# Importar o modelo Usuario é crucial para buscar o ID
+from models.models import Chamado, TipoChamado, Usuario 
 from datetime import datetime
-from utils.getUsername import getUsername
+from utils.getUsername import getUsername # Assume que retorna o login (username)
 
 cliente_route=Blueprint('Cliente',__name__)
 
@@ -10,11 +11,23 @@ def cliente_page():
     data_inicial_str = request.args.get('data_inicial')
     data_final_str = request.args.get('data_final')
     status_id_str = request.args.get('status_id')
-    tipo_id_str = request.args.get('tipo_id') # Valor selecionado para pré-seleção
+    tipo_id_str = request.args.get('tipo_id') 
 
     username = getUsername()
-    # 2. Iniciar a consulta base
-    query = Chamado.query.filter_by(user=username)
+    
+    # 1. NOVO: Buscar o ID do usuário pelo username (login)
+    usuario_logado = Usuario.query.filter_by(login=username).first()
+    
+    # Se o usuário não for encontrado (ou não estiver logado, dependendo da sua autenticação)
+    if not usuario_logado:
+        # Você pode retornar um 403 (Forbidden) ou 401 (Unauthorized)
+        # Neste caso, vamos retornar um 403 e encerrar.
+        return abort(403, description="Usuário não logado ou não encontrado na base de dados.")
+        
+    user_id = usuario_logado.id
+
+    # 2. Iniciar a consulta base, AGORA FILTRANDO POR user_id
+    query = Chamado.query.filter_by(user_id=user_id) # <--- CORREÇÃO AQUI
     
     # 3. Aplicar filtros dinamicamente (mantendo a lógica anterior)
 
@@ -49,19 +62,14 @@ def cliente_page():
     chamados = query.order_by(Chamado.datetime.desc()).all()
 
     # *************************************************************
-    # NOVO PASSO 1: Consultar os TIPOS DE CHAMADO
+    # Consultar os TIPOS DE CHAMADO
     # *************************************************************
     tipos_chamado = TipoChamado.query.order_by(TipoChamado.nome_tipo).all()
     
-    # Se o filtro de Status já estiver OK, você não precisa buscar ele novamente
-    # Apenas para garantir que o Status funcione se você o estiver usando na página
-    # status_chamado = StatusChamado.query.order_by(StatusChamado.status_id).all() 
-    
-    # 5. Renderizar o template com os chamados filtrados e a lista de tipos
+    # 5. Renderizar o template
     return render_template(
         'client_page.html', 
         chamados=chamados,
-        tipos=tipos_chamado,        # <-- PASSANDO A LISTA DE TIPOS
-        # status_list=status_chamado, # <-- Manter ou remover se não for necessário
-        request=request             # <-- Necessário para pré-selecionar o filtro
+        tipos=tipos_chamado,
+        request=request
     )

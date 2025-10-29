@@ -98,16 +98,32 @@
                     </div>
                     <div class="card-body">
                         <form id="formFiltro" class="row g-3">
-                            <div class="col-md-4">
+                            
+                            <div class="col-md-3">
                                 <label for="dataInicial" class="form-label">Data Inicial</label>
                                 <input type="date" class="form-control" id="dataInicial" name="data_inicial" value="{{ request.args.get('data_inicial', '') }}">
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label for="dataFinal" class="form-label">Data Final</label>
                                 <input type="date" class="form-control" id="dataFinal" name="data_final" value="{{ request.args.get('data_final', '') }}">
                             </div>
                             
-                            <div class="col-md-4">
+                            <div class="col-md-3">
+                                <label for="atendenteFiltro" class="form-label">Atendente/Técnico</label>
+                                <select class="form-select" id="atendenteFiltro" name="atendente_id">
+                                    <option value="" {% if not request.args.get('atendente_id') %}selected{% endif %}>Todos os Atendentes</option>
+                                    <option value="NA" {% if request.args.get('atendente_id') == 'NA' %}selected{% endif %}>NÃO ATRIBUÍDO</option>
+                                    
+                                    {% for atendente in atendentes %}
+                                        <option 
+                                            value="{{ atendente.id }}" 
+                                            {% if request.args.get('atendente_id')|int == atendente.id %}selected{% endif %}>
+                                            {{ atendente.nome }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
                                 <label for="statusFiltro" class="form-label">Status</label>
                                 <select class="form-select" id="statusFiltro" name="status_id">
                                     <option value="" {% if not request.args.get('status_id') %}selected{% endif %}>Todos os Status</option>
@@ -135,8 +151,8 @@
                                     </select>
                             </div>
                             
-                            <div class="col-12 text-center mt-4">
-                                <button type="submit" class="btn btn-primary">
+                            <div class="col-md-8 d-flex align-items-end justify-content-end">
+                                <button type="submit" class="btn btn-primary me-2">
                                     <i class="bi bi-search me-2"></i> Filtrar Chamados
                                 </button>
                                 <button type="button" class="btn btn-secondary" id="btnLimparFiltros">
@@ -161,7 +177,7 @@
                                         <th>ID</th>
                                         <th>Data/Hora</th>
                                         <th>Solicitante</th>
-                                        <th>Setor</th>
+                                        <th>Atendente</th>
                                         <th>Tipo de Problema</th>
                                         <th>Status</th>
                                         <th>Ações</th>
@@ -183,10 +199,12 @@
                                         <td>{{ chamado.id }}</td>
                                         <td>{{ chamado.datetime.strftime('%d/%m/%Y %H:%M') }}</td>
                                         
-                                        <td>{{ chamado.nome_completo }}</td>
+                                        <td>{{ chamado.solicitante.nome|default('Usuário Removido') }}</td>
                                         
-                                        {# Exibe o nome do Setor #}
-                                        <td>{{ chamado.setor.nome_setor }}</td>
+                                        {# Exibe o nome do Atendente (Técnico Responsável). Usa 'Não Atribuído' se for NULL #}
+                                        <td>
+                                            {{ chamado.tecnico_responsavel.nome|default('Não Atribuído') }}
+                                        </td>
                                         
                                         {# Exibe o nome do Tipo de Problema #}
                                         <td>{{ chamado.tipo.nome_tipo }}</td>
@@ -270,7 +288,8 @@
         // ====================================================================
         // VARIÁVEIS DE URL (CONFIGURADAS PELO JINJA2)
         // ====================================================================
-        const ROTA_BASE_DETALHES = "{{ url_for('Chamados.detalhes_chamado', id_chamado=0)|safe }}"; // <-- NOVA ROTA AQUI
+        // NOTE: Estas rotas dependem de como você as definiu no seu código Python
+        const ROTA_BASE_DETALHES = "{{ url_for('Chamados.detalhes_chamado', id_chamado=0)|safe }}"; 
         const ROTA_BASE_ATENDER = "{{ url_for('Admin_chamados.atender_chamado', id_chamado=0)|safe }}";
         const ROTA_BASE_CONCLUIR = "{{ url_for('Admin_chamados.concluir_chamado', id_chamado=0)|safe }}";
         const ROTA_BASE_RECUSAR = "{{ url_for('Admin_chamados.recusar_chamado', id_chamado=0)|safe }}"; 
@@ -343,11 +362,11 @@
         }
 
         // ====================================================================
-        // LÓGICA DO MODAL E BOTÕES DE AÇÃO (ATUALIZADA)
+        // LÓGICA DO MODAL E BOTÕES DE AÇÃO (MANTIDA)
         // ====================================================================
 
         const modalAcoes = document.getElementById('modalAcoes');
-        const btnVerDetalhes = document.getElementById('btnVerDetalhes'); // <-- NOVO BOTÃO
+        const btnVerDetalhes = document.getElementById('btnVerDetalhes');
         const btnAtender = document.getElementById('btnAtender');
         const btnConcluir = document.getElementById('btnConcluir');
         const btnRecusar = document.getElementById('btnRecusar');
@@ -359,18 +378,15 @@
             modalTitle.textContent = chamadoId;
         });
         
-        // NOVO EVENTO: Redirecionar para a página de Detalhes
         btnVerDetalhes.addEventListener('click', function() {
             const chamadoId = modalAcoes.querySelector('#chamadoIdDisplay').textContent;
             const rotaCompleta = construirRota(ROTA_BASE_DETALHES, chamadoId);
             
-            // Fecha o modal e navega para a rota de detalhes
             const modalInstance = bootstrap.Modal.getInstance(modalAcoes);
             modalInstance.hide();
             window.location.href = rotaCompleta;
         });
         
-        // Eventos Atender, Concluir e Recusar (Mantidos)
         btnAtender.addEventListener('click', function() {
             const chamadoId = modalAcoes.querySelector('#chamadoIdDisplay').textContent;
             const rotaCompleta = construirRota(ROTA_BASE_ATENDER, chamadoId); 
@@ -416,7 +432,7 @@
 
 
         // ====================================================================
-        // LÓGICA DE FILTRO ATUALIZADA (Mantida)
+        // LÓGICA DE FILTRO (MANTIDA)
         // ====================================================================
         document.getElementById('formFiltro').addEventListener('submit', function(event) {
             event.preventDefault();
@@ -425,9 +441,7 @@
             const formData = new FormData(form);
             const searchParams = new URLSearchParams();
 
-            // Itera sobre os dados do formulário e constrói a URLSearchParams
             for (const [key, value] of formData.entries()) {
-                // Adiciona apenas valores que não estão vazios ('')
                 if (value) {
                     searchParams.append(key, value);
                 }
@@ -435,14 +449,10 @@
 
             const queryString = searchParams.toString();
             
-            // Recarrega a página atual com a string de consulta (query string)
-            // Ex: /admin/?data_inicial=2025-01-01&status_id=1
             window.location.href = ROTA_ATUAL_ADMIN + (queryString ? '?' + queryString : '');
         });
         
-        // Novo evento: Limpar Filtros
         document.getElementById('btnLimparFiltros').addEventListener('click', function() {
-            // Recarrega a página de administração sem query parameters
             window.location.href = ROTA_ATUAL_ADMIN;
         });
 
