@@ -49,7 +49,7 @@
 
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link" href="#"> <i class="bi bi-headset me-2"></i> Abrir Chamado
+                            <a class="nav-link" href="{{ url_for('Home.home_page') }}"> <i class="bi bi-headset me-2"></i> Abrir Chamado
                             </a>
                         </li>
                         <li class="nav-item">
@@ -58,15 +58,15 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#"> <i class="bi bi-list-check me-2"></i> Meus Chamados
+                            <a class="nav-link" href="{{ url_for('Cliente.cliente_page') }}"> <i class="bi bi-list-check me-2"></i> Meus Chamados
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link active" aria-current="page" href="#"> <i class="bi bi-person-circle me-2"></i> Minhas Informações
+                            <a class="nav-link active" aria-current="page" href="{{ url_for('User.user_page') }}"> <i class="bi bi-person-circle me-2"></i> Minhas Informações
                             </a>
                         </li>
                          <li class="nav-item">
-                            <a class="nav-link" href="#"> <i class="bi bi-shield-lock me-2"></i> Página de Administrador
+                            <a class="nav-link" href="{{ url_for('Admin_chamados.admin_page') }}"> <i class="bi bi-shield-lock me-2"></i> Página de Administrador
                             </a>
                         </li>
                     </ul>
@@ -100,15 +100,15 @@
                             </div>
                             <div class="card-body p-4 p-md-5">
                                 
-                                <form id="formInfoPessoais">
+                                <form id="formAlterarSenha">
                                     
                                     <div class="mb-3">
                                         <label for="nomeUsuario" class="form-label">Nome</label>
-                                        <input type="text" class="form-control" id="nomeUsuario" value="Nome Teste" readonly>
+                                        <input type="text" class="form-control" id="nomeUsuario" value="{{ nome_usuario }}" readonly>
                                     </div>
                                     <div class="mb-4">
                                         <label for="cargoUsuario" class="form-label">Cargo</label>
-                                        <input type="text" class="form-control" id="cargoUsuario" value="Cargo Teste" readonly>
+                                        <input type="text" class="form-control" id="cargoUsuario" value="{{ cargo_usuario }}" readonly>
                                     </div>
 
                                     <hr class="my-4">
@@ -145,43 +145,77 @@
             </main>
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-
+    
     <script>
-        // Script simples para validação do formulário de senha
-        document.getElementById('formInfoPessoais').addEventListener('submit', function(event) {
-            event.preventDefault(); // Impede o envio padrão do formulário
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('formAlterarSenha');
 
+        form.addEventListener('submit', async function(event) {
+            // 1. Previne o comportamento padrão do formulário (que recarrega a página)
+            event.preventDefault();
+
+            // 2. Coleta os valores dos campos
+            const senhaAtual = document.getElementById('senhaAtual').value;
             const novaSenha = document.getElementById('novaSenha').value;
             const confirmarSenha = document.getElementById('confirmarNovaSenha').value;
 
-            if (novaSenha !== confirmarSenha) {
-                Swal.fire({
-                    title: 'Erro!',
-                    text: 'A "Nova Senha" e a "Confirmação" não são iguais. Por favor, verifique.',
-                    icon: 'error',
-                    confirmButtonColor: 'var(--bs-pink-primary)'
-                });
-                return; // Para a execução se as senhas não baterem
+            // 3. Validação no lado do cliente (frontend)
+            if (!senhaAtual || !novaSenha || !confirmarSenha) {
+                Swal.fire('Atenção!', 'Todos os campos de senha devem ser preenchidos.', 'warning');
+                return;
             }
 
-            // Se tudo estiver certo, pode prosseguir com a lógica de envio para o backend
-            // Exemplo:
-            // const dados = new FormData(this);
-            // fetch('/sua-rota-de-alterar-senha', { method: 'POST', body: dados })
-            //    .then(...)
+            if (novaSenha !== confirmarSenha) {
+                Swal.fire('Erro!', 'A nova senha e a confirmação não são iguais.', 'error');
+                return;
+            }
+            
+            // 4. Monta o corpo da requisição (payload) sem o username
+            // O backend é quem deve identificar o usuário a partir do cookie HttpOnly
+            const payload = {
+                senha: senhaAtual,
+                nova_senha: novaSenha
+            };
 
-            Swal.fire({
-                title: 'Sucesso!',
-                text: 'Sua senha foi alterada com sucesso.',
-                icon: 'success',
-                confirmButtonColor: 'var(--bs-pink-primary)'
-            }).then(() => {
-                this.reset(); // Limpa o formulário após o sucesso
-            });
+            // 5. Bloco try/catch para enviar os dados e tratar a resposta
+            try {
+                // A URL deve corresponder exatamente ao blueprint e à rota no Flask
+                const response = await fetch('/usuario/alterar-senha', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
 
+                // Converte a resposta do servidor para JSON
+                const result = await response.json();
+
+                // 6. Trata a resposta com base no status HTTP
+                if (response.ok) { // Status 2xx (Sucesso)
+                    Swal.fire({
+                        title: 'Sucesso!',
+                        text: result.message,
+                        icon: 'success',
+                        confirmButtonColor: 'var(--bs-pink-primary)'
+                    });
+                    form.reset(); // Limpa os campos de senha do formulário
+                } else { // Status 4xx, 5xx (Erro)
+                    Swal.fire({
+                        title: 'Erro!',
+                        text: result.error || 'Ocorreu um problema ao tentar alterar a senha.',
+                        icon: 'error',
+                        confirmButtonColor: 'var(--bs-pink-primary)'
+                    });
+                }
+
+            } catch (error) {
+                // 7. Trata erros de conexão (ex: servidor offline)
+                console.error('Erro de conexão:', error);
+                Swal.fire('Erro de Conexão!', 'Não foi possível se comunicar com o servidor. Verifique sua conexão e tente novamente.', 'error');
+            }
         });
+    });
     </script>
 </body>
 </html>
