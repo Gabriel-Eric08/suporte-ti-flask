@@ -1,0 +1,32 @@
+name: Deploy para GitHub Pages
+
+on:
+  push:
+    branches: [ "main" ]  # roda toda vez que fizer push na main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: Fazer upload da pasta 'page'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './page'  # 👈 aqui vai a pasta com seu index.html
+
+      - name: Publicar no GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
