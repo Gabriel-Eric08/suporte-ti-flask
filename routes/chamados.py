@@ -4,6 +4,7 @@ from datetime import datetime
 from db_config import db
 from sqlalchemy import and_
 from utils.posicaoChamado import posicaoChamado
+from utils.changePasswordRequired import password_change_required
 
 chamados_route = Blueprint('Chamados', __name__)
 
@@ -179,6 +180,7 @@ def posicao_fila():
         }), 500
     
 @chamados_route.route('/<int:id_chamado>')
+@password_change_required
 def detalhes_chamado(id_chamado):
     
     # 1. Busca o chamado principal

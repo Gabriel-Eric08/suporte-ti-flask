@@ -6,6 +6,7 @@ from sqlalchemy.orm import joinedload
 import pytz
 from utils.getUsername import getUsername
 from sqlalchemy import or_
+from utils.changePasswordRequired import password_change_required
 
 admin_chamado_route = Blueprint('Admin_chamados', __name__)
 
@@ -32,6 +33,7 @@ def verificar_admin_ou_funcionario():
 
 
 @admin_chamado_route.route('/')
+@password_change_required
 def admin_page():
     # --- 0. VERIFICAÇÃO DE ACESSO ---
     usuario_autorizado = verificar_admin_ou_funcionario()

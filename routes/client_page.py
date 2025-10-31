@@ -3,10 +3,12 @@ from flask import Blueprint, request, render_template, abort
 from models.models import Chamado, TipoChamado, Usuario 
 from datetime import datetime
 from utils.getUsername import getUsername # Assume que retorna o login (username)
+from utils.changePasswordRequired import password_change_required
 
 cliente_route=Blueprint('Cliente',__name__)
 
 @cliente_route.route('/')
+@password_change_required
 def cliente_page():
     data_inicial_str = request.args.get('data_inicial')
     data_final_str = request.args.get('data_final')

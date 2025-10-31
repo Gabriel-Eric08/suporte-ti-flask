@@ -3,11 +3,13 @@ from models.models import Usuario, Cargo
 from db_config import db
 from utils.getUsername import getUsername 
 from utils.validate_auth import check_auth_status
+from utils.changePasswordRequired import password_change_required
 
 user_route = Blueprint('User', __name__)
 
 
 @user_route.route('/')
+@password_change_required
 def user_page():
     """
     Renderiza a página de informações do usuário.
