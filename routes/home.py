@@ -5,10 +5,12 @@ from db_config import db
 from sqlalchemy.exc import SQLAlchemyError
 from utils.validate_auth import check_auth_status
 from utils.getUsername import getUsername
+from utils.changePasswordRequired import password_change_required
 
 home_route=Blueprint('Home',__name__)
 
 @home_route.route('/')
+@password_change_required
 def home_page():
     validate_status=check_auth_status()
     if validate_status == False:
