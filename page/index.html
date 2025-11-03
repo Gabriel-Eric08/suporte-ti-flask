@@ -113,6 +113,7 @@
             color: var(--cor-texto-principal);
             display: flex; /* Para o card preencher */
             width: 100%;
+            cursor: pointer;
         }
         .system-link-card:hover {
             color: var(--cor-texto-principal);
@@ -199,6 +200,35 @@
             font-size: 0.9rem;
         }
 
+        /* --- Estilo para o display do IP --- */
+        .ip-display {
+            background: linear-gradient(135deg, var(--cor-primaria), var(--cor-secundaria));
+            color: white;
+            padding: 15px 20px;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(136, 14, 79, 0.3);
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .ip-display h5 {
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .ip-display .ip-value {
+            font-family: monospace;
+            font-size: 1.2rem;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-left: 10px;
+        }
+
+        .loading-ip {
+            opacity: 0.7;
+        }
+
     </style>
 </head>
 <body>
@@ -277,10 +307,19 @@
             </div>
 
             <div class="tab-pane fade" id="externa" role="tabpanel" aria-labelledby="externa-tab">
+                <!-- Display do IP -->
+                <div class="ip-display text-center">
+                    <h5>
+                        <i class="fa-solid fa-key me-2"></i>
+                        Senha para acesso: 
+                        <span id="ipValue" class="ip-value loading-ip">Carregando seu IP...</span>
+                    </h5>
+                </div>
+
                 <div class="row row-cards justify-content-center">
 
                     <div class="col-12 col-md-6 col-lg-4 col-card">
-                        <a href="https://secmulher-suporteti.loca.lt" class="system-link-card" target="_blank" rel="noopener noreferrer">
+                        <a href="https://secmulher-suporteti.loca.lt" class="system-link-card" target="_blank" rel="noopener noreferrer" data-external-url="https://secmulher-suporteti.loca.lt">
                             <div class="card system-card text-center shadow-sm">
                                 <div class="card-body">
                                     <i class="fa-solid fa-headset system-icon"></i>
@@ -295,7 +334,7 @@
                     </div>
 
                     <div class="col-12 col-md-6 col-lg-4 col-card">
-                        <a href="https://secmulher-contratos.loca.lt" class="system-link-card" target="_blank" rel="noopener noreferrer">
+                        <a href="https://secmulher-contratos.loca.lt" class="system-link-card" target="_blank" rel="noopener noreferrer" data-external-url="https://secmulher-contratos.loca.lt">
                             <div class="card system-card text-center shadow-sm">
                                 <div class="card-body">
                                     <i class="fa-solid fa-file-invoice system-icon"></i>
@@ -310,7 +349,7 @@
                     </div>
 
                     <div class="col-12 col-md-6 col-lg-4 col-card">
-                        <a href="https://geral-sistemas-secmulher.loca.lt" class="system-link-card" target="_blank" rel="noopener noreferrer">
+                        <a href="https://geral-sistemas-secmulher.loca.lt" class="system-link-card" target="_blank" rel="noopener noreferrer" data-external-url="https://geral-sistemas-secmulher.loca.lt">
                             <div class="card system-card text-center shadow-sm">
                                 <div class="card-body">
                                     <i class="fa-solid fa-layer-group system-icon"></i>
@@ -333,7 +372,6 @@
         <p class="mb-0">&copy; 2025 Secretaria da Mulher. Todos os direitos reservados.</p>
     </footer>
 
-
     <script>
         // === VARIÁVEL PRINCIPAL: IP base interno
         const url = "http://172.16.212.21";
@@ -347,11 +385,89 @@
 
         const base = buildBaseUrl(url);
 
-        // Atualiza links internos
-        document.addEventListener("DOMContentLoaded", () => {
+        // === FUNÇÃO PARA OBTER O IP DO USUÁRIO ===
+        async function getUserIP() {
+            try {
+                // Tenta obter o IP de múltiplos serviços (fallback)
+                const ipServices = [
+                    'https://api.ipify.org',
+                    'https://checkip.amazonaws.com',
+                    'https://icanhazip.com'
+                ];
+
+                let userIP = null;
+                
+                for (const service of ipServices) {
+                    try {
+                        const response = await fetch(service);
+                        if (response.ok) {
+                            userIP = await response.text();
+                            userIP = userIP.trim();
+                            break; // Se um serviço funcionar, para aqui
+                        }
+                    } catch (error) {
+                        console.log(`Serviço ${service} falhou, tentando próximo...`);
+                    }
+                }
+
+                return userIP;
+            } catch (error) {
+                console.error('Erro ao obter IP:', error);
+                return null;
+            }
+        }
+
+        // === FUNÇÃO PARA REDIRECIONAR COM SENHA ===
+        function redirectWithPassword(event, systemUrl) {
+            event.preventDefault();
+            
+            const userIP = localStorage.getItem('userIPv4');
+            
+            if (!userIP) {
+                alert('IP não detectado. Por favor, recarregue a página.');
+                return;
+            }
+
+            // Monta a URL com o IP como senha
+            const urlWithPassword = `${systemUrl}?password=${encodeURIComponent(userIP)}`;
+            
+            // Redireciona para o sistema
+            window.open(urlWithPassword, '_blank', 'noopener,noreferrer');
+        }
+
+        // === INICIALIZAÇÃO ===
+        document.addEventListener("DOMContentLoaded", async () => {
+            // Atualiza links internos
             document.querySelectorAll("#interna .system-link-card").forEach(a => {
                 const port = a.getAttribute("data-port");
                 if (port) a.href = `${base}:${port}`;
+            });
+
+            // Obtém e armazena o IP do usuário
+            const userIP = await getUserIP();
+            const ipDisplay = document.getElementById('ipValue');
+            
+            if (userIP) {
+                // Armazena no localStorage
+                localStorage.setItem('userIPv4', userIP);
+                
+                // Atualiza o display
+                ipDisplay.textContent = userIP;
+                ipDisplay.classList.remove('loading-ip');
+                
+                console.log('IP armazenado:', userIP);
+            } else {
+                ipDisplay.textContent = 'Não foi possível obter o IP';
+                ipDisplay.style.color = '#ff6b6b';
+            }
+
+            // Adiciona event listeners para os sistemas externos
+            document.querySelectorAll("#externa .system-link-card").forEach(link => {
+                const systemUrl = link.getAttribute('data-external-url') || link.getAttribute('href');
+                
+                link.addEventListener('click', (event) => {
+                    redirectWithPassword(event, systemUrl);
+                });
             });
         });
     </script>
