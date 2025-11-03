@@ -7,24 +7,44 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
+            /* Paleta de cores refinada */
             --cor-primaria: #880e4f;
-            --cor-secundaria: #f48fb1;
-            --cor-fundo: #fce4ec;
-            --cor-texto: #4a148c;
-            --cor-link-hover: #e91e63;
+            --cor-secundaria: #c2185b; /* Tom mais forte para hover */
+            --cor-fundo: #fdf7f9;    /* Fundo mais suave, quase branco */
+            --cor-texto-principal: #333;
+            --cor-texto-secundario: #666;
+            --cor-branco: #ffffff;
+            --font-principal: 'Poppins', sans-serif;
+        }
+
+        /* Animação de entrada na página */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         body {
+            font-family: var(--font-principal);
             background-color: var(--cor-fundo);
-            color: var(--cor-texto);
+            color: var(--cor-texto-principal);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            animation: fadeIn 0.8s ease-out;
         }
 
+        .container {
+            flex-grow: 1;
+        }
+
+        /* Título do Cabeçalho */
         .header-title {
             color: var(--cor-primaria);
             font-weight: 700;
@@ -32,110 +52,306 @@
             padding-bottom: 1rem;
         }
 
+        .header-title .fa-solid {
+            /* Alinha melhor o ícone ao texto */
+            transform: translateY(-4px);
+        }
+
+        .lead {
+            color: var(--cor-texto-secundario);
+            font-size: 1.15rem;
+            font-weight: 300;
+        }
+
+        /* --- Abas de Acesso (A parte "Está na sede?") --- */
+        .nav-pills {
+            border-bottom: none;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .nav-pills .nav-link {
+            background-color: var(--cor-branco);
+            color: var(--cor-secundaria);
+            border: 1px solid var(--cor-secundaria);
+            border-radius: 50px; /* Pílulas arredondadas */
+            padding: 12px 25px;
+            font-weight: 600;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .nav-pills .nav-link:hover {
+            background-color: var(--cor-fundo);
+            transform: translateY(-3px); /* Efeito de "levantar" */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+        
+        .nav-pills .nav-link.active {
+            background-color: var(--cor-primaria);
+            color: var(--cor-branco);
+            border-color: var(--cor-primaria);
+            box-shadow: 0 5px 15px rgba(136, 14, 79, 0.3);
+        }
+
+        /* --- Cards dos Sistemas --- */
+        
+        /* Ajuste para que todos os cards na mesma linha tenham a mesma altura */
+        .row-cards {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .col-card {
+            display: flex;
+            padding: 1rem; /* g-4 do bootstrap */
+        }
+
+        /* O link agora é um container de card */
+        .system-link-card {
+            text-decoration: none;
+            color: var(--cor-texto-principal);
+            display: flex; /* Para o card preencher */
+            width: 100%;
+        }
+        .system-link-card:hover {
+            color: var(--cor-texto-principal);
+        }
+
         .system-card {
-            background-color: var(--cor-secundaria);
+            background-color: var(--cor-branco); /* Cartões brancos e limpos */
             border: none;
-            border-radius: 15px;
-            transition: transform 0.3s, box-shadow 0.3s;
+            border-radius: 20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08); /* Sombra sutil padrão */
+            width: 100%;
+            display: flex;
+            flex-direction: column; /* Para o botão ficar no rodapé */
         }
 
         .system-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(136, 14, 79, 0.3);
+            transform: translateY(-10px); /* Efeito de elevação maior */
+            box-shadow: 0 12px 25px rgba(136, 14, 79, 0.2); /* Sombra colorida e mais forte */
         }
 
-        .system-link {
-            text-decoration: none;
-            color: var(--cor-texto);
-            font-size: 1.25rem;
-            font-weight: 600;
-            display: block;
-            padding: 1rem;
-            transition: color 0.3s;
-        }
-
-        .system-link:hover {
-            color: white;
+        .system-card .card-body {
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1; /* Faz o corpo do card crescer */
         }
 
         .system-icon {
             color: var(--cor-primaria);
-            font-size: 2.5rem;
-            margin-bottom: 15px;
+            font-size: 3rem; /* Ícone maior */
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
         }
+
+        /* Animação no ícone */
+        .system-card:hover .system-icon {
+            transform: scale(1.1) rotate(-5deg);
+        }
+
+        .system-card .card-title {
+            color: var(--cor-secundaria);
+            font-weight: 700;
+        }
+
+        .system-card .card-text {
+            color: var(--cor-texto-secundario);
+            font-size: 0.95rem;
+            flex-grow: 1; /* Empurra o botão para baixo */
+            margin-bottom: 1.5rem; /* Espaço antes do botão */
+        }
+
+        /* --- Botão "Acessar Sistema" --- */
+        .btn-acessar {
+            background-color: var(--cor-primaria);
+            color: var(--cor-branco);
+            font-weight: 600;
+            border-radius: 50px;
+            padding: 10px 25px;
+            transition: all 0.3s ease;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .system-card:hover .btn-acessar {
+            background-color: var(--cor-secundaria);
+            transform: scale(1.05); /* Efeito de "zoom" no botão */
+        }
+
+        /* Animação da seta do botão */
+        .btn-acessar .fa-solid {
+            transition: transform 0.3s ease;
+            margin-left: 8px;
+        }
+
+        .system-card:hover .btn-acessar .fa-solid {
+            transform: translateX(5px);
+        }
+
+        /* Rodapé */
+        footer {
+            border-top: 1px solid #e0e0e0;
+            color: #999;
+            font-size: 0.9rem;
+        }
+
     </style>
 </head>
 <body>
-    <div class="container my-5 flex-grow-1">
+    <div class="container my-5">
         <header class="text-center mb-5">
-            <h1 class="header-title display-4">
-                <i class="fa-solid fa-laptop-code me-3"></i>
+            <h1 class="header-title display-5">
+                <i class="fa-solid fa-laptop-code me-2"></i>
                 SECRETARIA DA MULHER - SISTEMAS
             </h1>
-            <p class="lead text-muted">Acesse as ferramentas e sistemas da Secretaria.</p>
+            <p class="lead">Escolha a forma de acesso conforme sua localização.</p>
         </header>
 
-        <div class="row justify-content-center g-4">
+        <ul class="nav nav-pills justify-content-center mb-5" id="accessTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="interna-tab" data-bs-toggle="tab" data-bs-target="#interna" type="button" role="tab" aria-controls="interna" aria-selected="true">
+                    <i class="fa-solid fa-building me-2"></i> Estou na Sede
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="externa-tab" data-bs-toggle="tab" data-bs-target="#externa" type="button" role="tab" aria-controls="externa" aria-selected="false">
+                    <i class="fa-solid fa-house-laptop me-2"></i> Acesso Externo
+                </button>
+            </li>
+        </ul>
 
-            <!-- Observação: usamos data-port para indicar só a porta; o JS monta o href -->
-            <div class="col-12 col-md-6 col-lg-4">
-                <a class="text-decoration-none system-link-card" data-port="5002" target="_blank" rel="noopener noreferrer">
-                    <div class="card system-card text-center p-4 shadow">
-                        <i class="fa-solid fa-headset system-icon"></i>
-                        <h5 class="card-title text-uppercase mb-3">Suporte - TI</h5>
-                        <p class="card-text">Abrir chamados, consultar status e base de conhecimento.</p>
-                        <div class="mt-3">
-                            <span class="btn btn-lg" style="background-color: var(--cor-primaria); color: white;">
-                                Acessar Sistema <i class="fa-solid fa-arrow-right-long ms-2"></i>
-                            </span>
-                        </div>
+        <div class="tab-content" id="accessTabsContent">
+            <div class="tab-pane fade show active" id="interna" role="tabpanel" aria-labelledby="interna-tab">
+                <div class="row row-cards justify-content-center">
+
+                    <div class="col-12 col-md-6 col-lg-4 col-card">
+                        <a class="system-link-card" data-port="5002" target="_blank" rel="noopener noreferrer">
+                            <div class="card system-card text-center shadow-sm">
+                                <div class="card-body">
+                                    <i class="fa-solid fa-headset system-icon"></i>
+                                    <h5 class="card-title text-uppercase mb-3">Suporte - TI</h5>
+                                    <p class="card-text">Abrir chamados, consultar status e base de conhecimento.</p>
+                                    <span class="btn-acessar mt-auto">
+                                        Acessar Sistema <i class="fa-solid fa-arrow-right-long"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
                     </div>
-                </a>
+
+                    <div class="col-12 col-md-6 col-lg-4 col-card">
+                        <a class="system-link-card" data-port="5000" target="_blank" rel="noopener noreferrer">
+                            <div class="card system-card text-center shadow-sm">
+                                <div class="card-body">
+                                    <i class="fa-solid fa-file-invoice system-icon"></i>
+                                    <h5 class="card-title text-uppercase mb-3">Controle de Notas Fiscais</h5>
+                                    <p class="card-text">Gerenciar, emitir e consultar documentos fiscais.</p>
+                                    <span class="btn-acessar mt-auto">
+                                        Acessar Sistema <i class="fa-solid fa-arrow-right-long"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-lg-4 col-card">
+                        <a class="system-link-card" data-port="5004" target="_blank" rel="noopener noreferrer">
+                            <div class="card system-card text-center shadow-sm">
+                                <div class="card-body">
+                                    <i class="fa-solid fa-layer-group system-icon"></i>
+                                    <h5 class="card-title text-uppercase mb-3">Geral - Sistemas</h5>
+                                    <p class="card-text">Acesso geral aos sistemas internos da secretaria.</p>
+                                    <span class="btn-acessar mt-auto">
+                                        Acessar Sistema <i class="fa-solid fa-arrow-right-long"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                </div>
             </div>
 
-            <div class="col-12 col-md-6 col-lg-4">
-                <a class="text-decoration-none system-link-card" data-port="5000" target="_blank" rel="noopener noreferrer">
-                    <div class="card system-card text-center p-4 shadow">
-                        <i class="fa-solid fa-file-invoice system-icon"></i>
-                        <h5 class="card-title text-uppercase mb-3">Controle de Notas Fiscais</h5>
-                        <p class="card-text">Gerenciar, emitir e consultar documentos fiscais.</p>
-                        <div class="mt-3">
-                            <span class="btn btn-lg" style="background-color: var(--cor-primaria); color: white;">
-                                Acessar Sistema <i class="fa-solid fa-arrow-right-long ms-2"></i>
-                            </span>
-                        </div>
-                    </div>
-                </a>
-            </div>
+            <div class="tab-pane fade" id="externa" role="tabpanel" aria-labelledby="externa-tab">
+                <div class="row row-cards justify-content-center">
 
+                    <div class="col-12 col-md-6 col-lg-4 col-card">
+                        <a href="https://secmulher-suporteti.loca.lt" class="system-link-card" target="_blank" rel="noopener noreferrer">
+                            <div class="card system-card text-center shadow-sm">
+                                <div class="card-body">
+                                    <i class="fa-solid fa-headset system-icon"></i>
+                                    <h5 class="card-title text-uppercase mb-3">Suporte - TI</h5>
+                                    <p class="card-text">Abrir chamados, consultar status e base de conhecimento.</p>
+                                    <span class="btn-acessar mt-auto">
+                                        Acessar Sistema <i class="fa-solid fa-arrow-right-long"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-lg-4 col-card">
+                        <a href="https://secmulher-contratos.loca.lt" class="system-link-card" target="_blank" rel="noopener noreferrer">
+                            <div class="card system-card text-center shadow-sm">
+                                <div class="card-body">
+                                    <i class="fa-solid fa-file-invoice system-icon"></i>
+                                    <h5 class="card-title text-uppercase mb-3">Controle de Notas Fiscais</h5>
+                                    <p class="card-text">Gerenciar, emitir e consultar documentos fiscais.</p>
+                                    <span class="btn-acessar mt-auto">
+                                        Acessar Sistema <i class="fa-solid fa-arrow-right-long"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="col-12 col-md-6 col-lg-4 col-card">
+                        <a href="https://geral-sistemas-secmulher.loca.lt" class="system-link-card" target="_blank" rel="noopener noreferrer">
+                            <div class="card system-card text-center shadow-sm">
+                                <div class="card-body">
+                                    <i class="fa-solid fa-layer-group system-icon"></i>
+                                    <h5 class="card-title text-uppercase mb-3">Geral - Sistemas</h5>
+                                    <p class="card-text">Acesso geral aos sistemas da secretaria.</p>
+                                    <span class="btn-acessar mt-auto">
+                                        Acessar Sistema <i class="fa-solid fa-arrow-right-long"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                </div>
+            </div>
         </div>
     </div>
 
+    <footer class="container-fluid text-center py-4 mt-5">
+        <p class="mb-0">&copy; 2025 Secretaria da Mulher. Todos os direitos reservados.</p>
+    </footer>
+
+
     <script>
-        // === VARIÁVEL PRINCIPAL: coloque aqui o IP / hostname base (ex: "172.16.0.4" ou "http://172.16.0.4" ou "https://meu.dominio")
-        // Mude apenas essa linha quando precisar apontar os links para outro host.
+        // === VARIÁVEL PRINCIPAL: IP base interno
         const url = "http://172.16.212.21";
 
-        // Constrói base completa com protocolo se necessário
         function buildBaseUrl(raw) {
             if (!raw) return "";
             const trimmed = raw.trim();
-            // se já contém protocolo, usa tal qual
             if (/^https?:\/\//i.test(trimmed)) return trimmed.replace(/\/+$/, "");
-            // caso contrário, adiciona http:// por padrão
             return "http://" + trimmed.replace(/\/+$/, "");
         }
 
         const base = buildBaseUrl(url);
 
-        // Atualiza todos os links com class .system-link-card que contenham data-port
+        // Atualiza links internos
         document.addEventListener("DOMContentLoaded", () => {
-            const links = document.querySelectorAll(".system-link-card");
-            links.forEach(a => {
+            document.querySelectorAll("#interna .system-link-card").forEach(a => {
                 const port = a.getAttribute("data-port");
-                if (!port) return;
-                // monta href: base + ":" + port
-                a.href = `${base}:${port}`;
+                if (port) a.href = `${base}:${port}`;
             });
         });
     </script>
