@@ -14,13 +14,13 @@ home_route=Blueprint('Home',__name__)
 def home_page():
     validate_status=check_auth_status()
     if validate_status == False:
-        return render_template('auth_error.html')
+        return render_template('auth_error.html.j2')
     
     username= getUsername()
     usuario = Usuario.query.filter_by(login=username).first()
     nome = usuario.nome
 
-    return render_template('home.html', nome=nome)
+    return render_template('home.html.j2', nome=nome)
 
 @home_route.route('/test-db')
 def test_db():

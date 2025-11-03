@@ -5,7 +5,7 @@ auth_route=Blueprint('Auth',__name__)
 
 @auth_route.route('/', methods=['GET'])
 def login_page():
-    return render_template('login_page.html')
+    return render_template('login_page.html.j2')
 
 @auth_route.route('/', methods=['POST'])
 def validate_login():

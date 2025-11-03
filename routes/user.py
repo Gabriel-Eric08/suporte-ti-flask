@@ -19,12 +19,12 @@ def user_page():
     """
     # 1. Valida se o usuário está autenticado
     if not check_auth_status():
-        return render_template('auth_error.html')
+        return render_template('auth_error.html.j2')
     
     # 2. Obtém o login do usuário a partir do cookie seguro (lido pelo backend)
     username = getUsername()
     if not username:
-        return render_template('auth_error.html', message="Sessão inválida. Não foi possível identificar o usuário.")
+        return render_template('auth_error.html.j2', message="Sessão inválida. Não foi possível identificar o usuário.")
 
     # 3. Busca as informações do usuário e do seu cargo usando um JOIN
     #    Corrigido para usar `Cargo.nome_cargo` conforme seu modelo.
@@ -35,10 +35,10 @@ def user_page():
 
     if not usuario_info:
         # Se o usuário do cookie não for encontrado no banco de dados
-        return render_template('auth_error.html', message="Usuário não encontrado no sistema.")
+        return render_template('auth_error.html.j2', message="Usuário não encontrado no sistema.")
 
     # 4. Renderiza o template, passando os dados encontrados
-    return render_template('info_user.html', 
+    return render_template('info_user.html.j2', 
                            nome_usuario=usuario_info.nome, 
                            cargo_usuario=usuario_info.cargo_nome)
 

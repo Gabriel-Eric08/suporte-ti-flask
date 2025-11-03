@@ -39,7 +39,7 @@ def admin_page():
     usuario_autorizado = verificar_admin_ou_funcionario()
     
     if usuario_autorizado is None:
-        return render_template('admin_acesso_negado.html'), 403 
+        return render_template('admin_acesso_negado.html.j2'), 403 
     # -------------------------------
     
     # 1. Obter parâmetros de consulta do URL
@@ -115,7 +115,7 @@ def admin_page():
 
     # 6. Renderizar o template original para usuários autorizados
     return render_template(
-        'admin_page.html', 
+        'admin_page.html.j2', 
         chamados=chamados,
         tipos=tipos_chamado,
         atendentes=atendentes, # <-- PASSANDO A LISTA DE ATENDENTES

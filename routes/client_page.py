@@ -70,7 +70,7 @@ def cliente_page():
     
     # 5. Renderizar o template
     return render_template(
-        'client_page.html', 
+        'client_page.html.j2', 
         chamados=chamados,
         tipos=tipos_chamado,
         request=request

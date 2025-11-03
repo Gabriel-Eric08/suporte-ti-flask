@@ -203,7 +203,7 @@ def detalhes_chamado(id_chamado):
     
     # 5. Renderiza o template
     return render_template(
-        'detalhes_chamado.html', 
+        'detalhes_chamado.html.j2', 
         chamado=chamado,
         posicao=posicao_formatada # Variável passada para o Jinja2
     )
