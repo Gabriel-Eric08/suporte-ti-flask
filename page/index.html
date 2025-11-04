@@ -373,104 +373,106 @@
     </footer>
 
     <script>
-        // === VARIÁVEL PRINCIPAL: IP base interno
-        const url = "http://172.17.100.53";
+    // === VARIÁVEL PRINCIPAL: IP base interno
+    const url = "http://172.17.100.53";
 
-        function buildBaseUrl(raw) {
-            if (!raw) return "";
-            const trimmed = raw.trim();
-            if (/^https?:\/\//i.test(trimmed)) return trimmed.replace(/\/+$/, "");
-            return "http://" + trimmed.replace(/\/+$/, "");
-        }
+    function buildBaseUrl(raw) {
+        if (!raw) return "";
+        const trimmed = raw.trim();
+        if (/^https?:\/\//i.test(trimmed)) return trimmed.replace(/\/+$/, "");
+        return "http://" + trimmed.replace(/\/+$/, "");
+    }
 
-        const base = buildBaseUrl(url);
+    const base = buildBaseUrl(url);
 
-        // === FUNÇÃO PARA OBTER O IP DO USUÁRIO ===
-        async function getUserIP() {
-            try {
-                // Tenta obter o IP de múltiplos serviços (fallback)
-                const ipServices = [
-                    'https://api.ipify.org',
-                    'https://checkip.amazonaws.com',
-                    'https://icanhazip.com'
-                ];
+    // === FUNÇÃO PARA OBTER O IP DO USUÁRIO ===
+    async function getUserIP() {
+        try {
+            const ipServices = [
+                'https://api.ipify.org',
+                'https://checkip.amazonaws.com',
+                'https://icanhazip.com'
+            ];
 
-                let userIP = null;
-                
-                for (const service of ipServices) {
-                    try {
-                        const response = await fetch(service);
-                        if (response.ok) {
-                            userIP = await response.text();
-                            userIP = userIP.trim();
-                            break; // Se um serviço funcionar, para aqui
-                        }
-                    } catch (error) {
-                        console.log(`Serviço ${service} falhou, tentando próximo...`);
+            let userIP = null;
+            
+            for (const service of ipServices) {
+                try {
+                    const response = await fetch(service);
+                    if (response.ok) {
+                        userIP = await response.text();
+                        userIP = userIP.trim();
+                        break;
                     }
+                } catch (error) {
+                    console.log(`Serviço ${service} falhou, tentando próximo...`);
                 }
-
-                return userIP;
-            } catch (error) {
-                console.error('Erro ao obter IP:', error);
-                return null;
             }
+
+            return userIP;
+        } catch (error) {
+            console.error('Erro ao obter IP:', error);
+            return null;
+        }
+    }
+
+    // === FUNÇÃO PARA REDIRECIONAR COM SENHA ===
+    function redirectWithPassword(event, systemUrl) {
+        event.preventDefault();
+        
+        // Agora a senha principal é o IP fixo
+        const fixedIP = "189.91.213.233";
+
+        // Monta a URL com o IP fixo como senha
+        const urlWithPassword = `${systemUrl}?password=${encodeURIComponent(fixedIP)}`;
+        
+        // Redireciona
+        window.open(urlWithPassword, '_blank', 'noopener,noreferrer');
+    }
+
+    // === INICIALIZAÇÃO ===
+    document.addEventListener("DOMContentLoaded", async () => {
+        // Atualiza links internos
+        document.querySelectorAll("#interna .system-link-card").forEach(a => {
+            const port = a.getAttribute("data-port");
+            if (port) a.href = `${base}:${port}`;
+        });
+
+        // IP fixo principal
+        const fixedIP = "189.91.213.233";
+
+        // Mostra o IP fixo como senha principal
+        const ipDisplay = document.getElementById('ipValue');
+        ipDisplay.textContent = fixedIP;
+        ipDisplay.classList.remove('loading-ip');
+
+        // Obtém o IP real do usuário para mostrar abaixo
+        const userIP = await getUserIP();
+
+        // Cria o texto auxiliar abaixo da senha
+        if (userIP) {
+            const ipContainer = ipDisplay.closest('.ip-display');
+            const helperText = document.createElement('p');
+            helperText.innerHTML = `Caso não funcione, tente usar seu IPv4: <strong>${userIP}</strong>`;
+            helperText.style.marginTop = "10px";
+            helperText.style.fontSize = "0.95rem";
+            helperText.style.opacity = "0.9";
+            ipContainer.appendChild(helperText);
+
+            // Armazena o IP do usuário localmente
+            localStorage.setItem('userIPv4', userIP);
         }
 
-        // === FUNÇÃO PARA REDIRECIONAR COM SENHA ===
-        function redirectWithPassword(event, systemUrl) {
-            event.preventDefault();
-            
-            const userIP = localStorage.getItem('userIPv4');
-            
-            if (!userIP) {
-                alert('IP não detectado. Por favor, recarregue a página.');
-                return;
-            }
-
-            // Monta a URL com o IP como senha
-            const urlWithPassword = `${systemUrl}?password=${encodeURIComponent(userIP)}`;
-            
-            // Redireciona para o sistema
-            window.open(urlWithPassword, '_blank', 'noopener,noreferrer');
-        }
-
-        // === INICIALIZAÇÃO ===
-        document.addEventListener("DOMContentLoaded", async () => {
-            // Atualiza links internos
-            document.querySelectorAll("#interna .system-link-card").forEach(a => {
-                const port = a.getAttribute("data-port");
-                if (port) a.href = `${base}:${port}`;
-            });
-
-            // Obtém e armazena o IP do usuário
-            const userIP = await getUserIP();
-            const ipDisplay = document.getElementById('ipValue');
-            
-            if (userIP) {
-                // Armazena no localStorage
-                localStorage.setItem('userIPv4', userIP);
-                
-                // Atualiza o display
-                ipDisplay.textContent = userIP;
-                ipDisplay.classList.remove('loading-ip');
-                
-                console.log('IP armazenado:', userIP);
-            } else {
-                ipDisplay.textContent = 'Não foi possível obter o IP';
-                ipDisplay.style.color = '#ff6b6b';
-            }
-
-            // Adiciona event listeners para os sistemas externos
-            document.querySelectorAll("#externa .system-link-card").forEach(link => {
-                const systemUrl = link.getAttribute('data-external-url') || link.getAttribute('href');
-                
-                link.addEventListener('click', (event) => {
-                    redirectWithPassword(event, systemUrl);
-                });
+        // Adiciona redirecionamento com IP fixo
+        document.querySelectorAll("#externa .system-link-card").forEach(link => {
+            const systemUrl = link.getAttribute('data-external-url') || link.getAttribute('href');
+            link.addEventListener('click', (event) => {
+                redirectWithPassword(event, systemUrl);
             });
         });
-    </script>
+    });
+</script>
+
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 </body>
